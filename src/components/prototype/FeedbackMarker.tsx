@@ -1,5 +1,7 @@
 
 import { Badge } from "@/components/ui/badge";
+import { useEffect, useRef } from "react";
+import anime from "animejs";
 
 interface FeedbackMarkerProps {
   id: string;
@@ -18,8 +20,23 @@ export function FeedbackMarker({
   isSelected, 
   onClick 
 }: FeedbackMarkerProps) {
+  const markerRef = useRef<HTMLDivElement>(null);
+  
+  // Animate when selected state changes
+  useEffect(() => {
+    if (isSelected) {
+      anime({
+        targets: markerRef.current,
+        scale: [1, 1.2, 1],
+        duration: 400,
+        easing: "easeOutElastic(1, .6)"
+      });
+    }
+  }, [isSelected]);
+  
   return (
     <div 
+      ref={markerRef}
       className={`feedback-marker absolute cursor-pointer ${isSelected ? 'z-50' : 'z-40'}`} 
       style={{ 
         left: `${x}%`, 
@@ -31,6 +48,7 @@ export function FeedbackMarker({
       <Badge 
         className={`
           h-6 w-6 flex items-center justify-center rounded-full text-xs font-bold shadow-md
+          transition-colors duration-300
           ${isSelected 
             ? 'bg-loop-purple hover:bg-loop-purple' 
             : 'bg-loop-blue hover:bg-loop-blue/90'

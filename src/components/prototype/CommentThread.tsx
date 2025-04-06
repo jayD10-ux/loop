@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { X } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import anime from "animejs";
 
 interface Author {
   name: string;
@@ -32,6 +33,29 @@ interface CommentThreadProps {
 
 export function CommentThread({ comment, onClose }: CommentThreadProps) {
   const [replyText, setReplyText] = useState("");
+  const threadRef = useRef<HTMLDivElement>(null);
+  const repliesRef = useRef<HTMLDivElement>(null);
+  
+  useEffect(() => {
+    // Animate thread on mount
+    anime({
+      targets: threadRef.current,
+      translateY: [10, 0],
+      opacity: [0, 1],
+      duration: 400,
+      easing: "easeOutQuad"
+    });
+    
+    // Animate replies with staggered effect
+    anime({
+      targets: ".comment-reply",
+      translateY: [10, 0],
+      opacity: [0, 1],
+      delay: anime.stagger(100),
+      duration: 400,
+      easing: "easeOutQuad"
+    });
+  }, []);
 
   const handleSubmitReply = (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,21 +63,49 @@ export function CommentThread({ comment, onClose }: CommentThreadProps) {
       console.log("Submitting reply:", replyText);
       // In a real app, would send to API
       setReplyText("");
+      
+      // Animation for successful reply
+      anime({
+        targets: ".reply-form",
+        translateY: [0, 5, 0],
+        duration: 400,
+        easing: "easeOutElastic(1, .6)"
+      });
     }
+  };
+  
+  const handleClose = () => {
+    // Animate out before closing
+    anime({
+      targets: threadRef.current,
+      translateY: [0, 10],
+      opacity: [1, 0],
+      duration: 300,
+      easing: "easeInQuad",
+      complete: onClose
+    });
   };
 
   return (
-    <div className="bg-card border rounded-lg p-4 shadow-lg">
+    <div 
+      ref={threadRef}
+      className="bg-card border rounded-lg p-4 shadow-lg"
+    >
       <div className="flex justify-between items-start mb-4">
         <h3 className="font-semibold">Feedback Thread</h3>
-        <Button variant="ghost" size="sm" onClick={onClose}>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={handleClose}
+          className="transition-transform hover:scale-110"
+        >
           <X className="h-4 w-4" />
         </Button>
       </div>
       
-      <div className="space-y-4 mb-4">
+      <div className="space-y-4 mb-4" ref={repliesRef}>
         <div className="flex gap-3">
-          <Avatar className="h-8 w-8 mt-0.5">
+          <Avatar className="h-8 w-8 mt-0.5 transition-transform hover:scale-110">
             <AvatarImage src={comment.author.avatarUrl} />
             <AvatarFallback>{comment.author.name.charAt(0)}</AvatarFallback>
           </Avatar>
@@ -69,8 +121,8 @@ export function CommentThread({ comment, onClose }: CommentThreadProps) {
         </div>
         
         {comment.replies.map((reply) => (
-          <div key={reply.id} className="flex gap-3 ml-6">
-            <Avatar className="h-8 w-8 mt-0.5">
+          <div key={reply.id} className="flex gap-3 ml-6 comment-reply">
+            <Avatar className="h-8 w-8 mt-0.5 transition-transform hover:scale-110">
               <AvatarImage src={reply.author.avatarUrl} />
               <AvatarFallback>{reply.author.name.charAt(0)}</AvatarFallback>
             </Avatar>
@@ -87,9 +139,9 @@ export function CommentThread({ comment, onClose }: CommentThreadProps) {
         ))}
       </div>
       
-      <form onSubmit={handleSubmitReply}>
+      <form onSubmit={handleSubmitReply} className="reply-form">
         <div className="flex gap-3">
-          <Avatar className="h-8 w-8 mt-0.5">
+          <Avatar className="h-8 w-8 mt-0.5 transition-transform hover:scale-110">
             <AvatarImage src="https://i.pravatar.cc/150?img=1" />
             <AvatarFallback>Y</AvatarFallback>
           </Avatar>
@@ -106,6 +158,7 @@ export function CommentThread({ comment, onClose }: CommentThreadProps) {
                 variant="ghost" 
                 size="sm"
                 onClick={() => setReplyText("")}
+                className="transition-transform hover:scale-105"
               >
                 Cancel
               </Button>
@@ -113,6 +166,7 @@ export function CommentThread({ comment, onClose }: CommentThreadProps) {
                 type="submit" 
                 size="sm"
                 disabled={!replyText.trim()}
+                className="transition-transform hover:scale-105"
               >
                 Reply
               </Button>
