@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Upload } from "lucide-react";
-import anime from "animejs";
 
 interface CreateTeamStepProps {
   onNext: (data: { teamName: string; logo?: File }) => void;
@@ -15,58 +14,23 @@ export function CreateTeamStep({ onNext }: CreateTeamStepProps) {
   const [logo, setLogo] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [invalidAnimation, setInvalidAnimation] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const dropzoneRef = useRef<HTMLDivElement>(null);
 
-  // Animate form entry
-  useEffect(() => {
-    anime({
-      targets: formRef.current?.children,
-      translateY: [20, 0],
-      opacity: [0, 1],
-      delay: anime.stagger(100),
-      duration: 800,
-      easing: "easeOutQuad"
-    });
-  }, []);
-
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(true);
-    
-    anime({
-      targets: dropzoneRef.current,
-      scale: 1.05,
-      borderWidth: 3,
-      duration: 300,
-      easing: "easeOutQuad"
-    });
   };
 
   const handleDragLeave = () => {
     setIsDragging(false);
-    
-    anime({
-      targets: dropzoneRef.current,
-      scale: 1,
-      borderWidth: 2,
-      duration: 300,
-      easing: "easeOutQuad"
-    });
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    
-    anime({
-      targets: dropzoneRef.current,
-      scale: 1,
-      borderWidth: 2,
-      duration: 300,
-      easing: "easeOutQuad"
-    });
     
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
@@ -79,13 +43,6 @@ export function CreateTeamStep({ onNext }: CreateTeamStepProps) {
     const reader = new FileReader();
     reader.onload = (e) => {
       setLogoPreview(e.target?.result as string);
-      
-      anime({
-        targets: dropzoneRef.current,
-        scale: [1, 1.1, 1],
-        duration: 600,
-        easing: "easeOutElastic(1, .6)"
-      });
     };
     reader.readAsDataURL(file);
   };
@@ -93,31 +50,20 @@ export function CreateTeamStep({ onNext }: CreateTeamStepProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (teamName.trim()) {
-      anime({
-        targets: formRef.current,
-        translateX: [0, -20],
-        opacity: [1, 0],
-        duration: 400,
-        easing: "easeOutQuad",
-        complete: () => {
-          onNext({ teamName, logo: logo || undefined });
-        }
-      });
+      onNext({ teamName, logo: logo || undefined });
     } else {
-      // Shake animation for validation error
-      anime({
-        targets: inputRef.current,
-        translateX: [0, -10, 10, -10, 10, 0],
-        duration: 500,
-        easing: "easeInOutQuad",
-        borderColor: ['#f43f5e', '#d1d5db'],
-        backgroundColor: ['rgba(254,226,226,0.2)', 'rgba(255,255,255,1)'],
-      });
+      // Display validation error animation
+      setInvalidAnimation(true);
+      setTimeout(() => setInvalidAnimation(false), 600);
     }
   };
 
   return (
-    <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
+    <form 
+      ref={formRef} 
+      onSubmit={handleSubmit} 
+      className="space-y-6 opacity-0 animate-fade-in"
+    >
       <div className="space-y-2">
         <h2 className="text-2xl font-bold tracking-tight">Create Your Team</h2>
         <p className="text-muted-foreground">
@@ -135,7 +81,7 @@ export function CreateTeamStep({ onNext }: CreateTeamStepProps) {
             onChange={(e) => setTeamName(e.target.value)}
             placeholder="Acme, Inc."
             required
-            className="transition-all duration-300"
+            className={`transition-all duration-300 ${invalidAnimation ? 'animate-shake border-red-500 bg-red-50' : ''}`}
           />
         </div>
 
@@ -146,7 +92,8 @@ export function CreateTeamStep({ onNext }: CreateTeamStepProps) {
             className={`
               border-2 border-dashed rounded-lg p-8 flex flex-col items-center justify-center
               transition-all cursor-pointer hover:bg-muted/50
-              ${isDragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/20'}
+              ${isDragging ? 'border-primary bg-primary/5 scale-105' : 'border-muted-foreground/20'}
+              ${logoPreview ? 'scale-100 hover:scale-105' : ''}
             `}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}

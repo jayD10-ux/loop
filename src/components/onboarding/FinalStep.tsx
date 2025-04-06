@@ -1,8 +1,7 @@
 
-import React, { useEffect, useRef } from "react";
+import React, { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Upload } from "lucide-react";
-import anime from "animejs";
 
 interface FinalStepProps {
   onAddPrototype: () => void;
@@ -13,46 +12,15 @@ export function FinalStep({ onAddPrototype, onGoDashboard }: FinalStepProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const checkRef = useRef<HTMLDivElement>(null);
 
-  // Animate on mount
-  useEffect(() => {
-    // Animate container entry
-    anime({
-      targets: containerRef.current,
-      translateY: [20, 0],
-      opacity: [0, 1],
-      duration: 800,
-      easing: "easeOutQuad"
-    });
-
-    // Animate check mark
-    anime({
-      targets: checkRef.current,
-      scale: [0, 1.2, 1],
-      opacity: [0, 1],
-      rotate: [45, 0],
-      duration: 1000,
-      delay: 300,
-      easing: "easeOutElastic(1, .6)"
-    });
-
-    // Animate the text and buttons
-    anime({
-      targets: [
-        containerRef.current?.querySelector("h2"),
-        containerRef.current?.querySelector("p"),
-        containerRef.current?.querySelectorAll("button")
-      ],
-      translateY: [20, 0],
-      opacity: [0, 1],
-      delay: anime.stagger(150, { start: 800 }),
-      duration: 600,
-      easing: "easeOutQuad"
-    });
-  }, []);
-
   return (
-    <div ref={containerRef} className="flex flex-col items-center text-center space-y-6 py-8">
-      <div ref={checkRef} className="text-primary">
+    <div 
+      ref={containerRef} 
+      className="flex flex-col items-center text-center space-y-6 py-8 opacity-0 animate-fade-in"
+    >
+      <div 
+        ref={checkRef} 
+        className="text-primary animate-scale-in"
+      >
         <CheckCircle2 className="h-20 w-20" />
       </div>
       
@@ -64,11 +32,11 @@ export function FinalStep({ onAddPrototype, onGoDashboard }: FinalStepProps) {
       </div>
 
       <div className="flex flex-col w-full space-y-3">
-        <Button onClick={onAddPrototype} className="w-full">
+        <Button onClick={onAddPrototype} className="w-full transition-transform hover:scale-105">
           <Upload className="mr-2 h-4 w-4" />
           Add Prototype Now
         </Button>
-        <Button onClick={onGoDashboard} variant="outline" className="w-full">
+        <Button onClick={onGoDashboard} variant="outline" className="w-full transition-transform hover:scale-105">
           Go to Dashboard
         </Button>
       </div>

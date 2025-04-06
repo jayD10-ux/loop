@@ -5,7 +5,6 @@ import { OnboardingLayout } from "@/components/onboarding/OnboardingLayout";
 import { CreateTeamStep } from "@/components/onboarding/CreateTeamStep";
 import { InviteTeamStep } from "@/components/onboarding/InviteTeamStep";
 import { FinalStep } from "@/components/onboarding/FinalStep";
-import anime from "animejs";
 
 interface TeamData {
   teamName: string;
@@ -25,50 +24,17 @@ export default function Onboarding() {
 
   const handleCreateTeam = (data: TeamData) => {
     setTeamData(data);
-    
-    // Animate transition between steps
-    anime({
-      targets: document.querySelector('.onboarding-container'),
-      translateX: [0, -20, 20, 0],
-      opacity: [1, 0, 0, 1],
-      duration: 800,
-      easing: "easeInOutQuad",
-      complete: () => {
-        setStep(2);
-      }
-    });
+    setStep(2);
   };
 
   const handleInviteTeam = (data: InviteData) => {
     setInviteData(data);
-    
-    // Animate transition between steps
-    anime({
-      targets: document.querySelector('.onboarding-container'),
-      translateX: [0, -20, 20, 0],
-      opacity: [1, 0, 0, 1],
-      duration: 800,
-      easing: "easeInOutQuad",
-      complete: () => {
-        setStep(3);
-      }
-    });
+    setStep(3);
   };
 
   const handleSkipInvite = () => {
     setInviteData({ emails: [] });
-    
-    // Animate transition between steps
-    anime({
-      targets: document.querySelector('.onboarding-container'),
-      translateX: [0, -20, 20, 0],
-      opacity: [1, 0, 0, 1],
-      duration: 800,
-      easing: "easeInOutQuad",
-      complete: () => {
-        setStep(3);
-      }
-    });
+    setStep(3);
   };
 
   const handleAddPrototype = () => {
@@ -92,7 +58,7 @@ export default function Onboarding() {
   }
 
   return (
-    <div className="onboarding-container">
+    <div className="onboarding-container transition-all duration-500">
       <OnboardingLayout currentStep={step} totalSteps={3}>
         {step === 1 && (
           <CreateTeamStep onNext={handleCreateTeam} />

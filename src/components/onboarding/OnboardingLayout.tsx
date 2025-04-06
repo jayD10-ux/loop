@@ -1,6 +1,5 @@
 
 import React, { ReactNode, useEffect, useRef } from "react";
-import anime from "animejs";
 import { useNavigate } from "react-router-dom";
 
 interface OnboardingLayoutProps {
@@ -22,37 +21,23 @@ export function OnboardingLayout({
   const progressRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
-  // Animate entry on first render
   useEffect(() => {
-    anime({
-      targets: containerRef.current,
-      opacity: [0, 1],
-      translateY: [20, 0],
-      duration: 800,
-      easing: "easeOutQuad"
-    });
-  }, []);
-
-  // Animate progress bar when step changes
-  useEffect(() => {
-    anime({
-      targets: progressRef.current,
-      width: `${(currentStep / totalSteps) * 100}%`,
-      duration: 600,
-      easing: "easeInOutQuad"
-    });
+    // Set progress bar width based on current step
+    if (progressRef.current) {
+      progressRef.current.style.width = `${(currentStep / totalSteps) * 100}%`;
+    }
   }, [currentStep, totalSteps]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
       <div 
         ref={containerRef}
-        className="w-full max-w-xl bg-background rounded-xl shadow-lg overflow-hidden border"
+        className="w-full max-w-xl bg-background rounded-xl shadow-lg overflow-hidden border opacity-0 translate-y-4 animate-fade-in"
       >
         <div className="relative h-1 bg-muted">
           <div 
             ref={progressRef} 
-            className="absolute h-full bg-primary" 
+            className="absolute h-full bg-primary transition-all duration-500 ease-in-out" 
             style={{ width: `${(currentStep / totalSteps) * 100}%` }}
           />
         </div>
@@ -62,7 +47,7 @@ export function OnboardingLayout({
             {Array.from({ length: totalSteps }).map((_, index) => (
               <div 
                 key={index}
-                className={`h-2 w-2 rounded-full ${index < currentStep ? 'bg-primary' : 'bg-muted'}`}
+                className={`h-2 w-2 rounded-full transition-colors duration-300 ${index < currentStep ? 'bg-primary' : 'bg-muted'}`}
               />
             ))}
           </div>
