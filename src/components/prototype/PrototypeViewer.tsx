@@ -27,7 +27,8 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FeedbackMarker } from "./FeedbackMarker";
 import { CommentThread } from "./CommentThread";
-import anime from "animejs";
+import * as animeJs from "animejs";
+const anime = animeJs.default;
 import { useNavigate } from "react-router-dom";
 
 interface PrototypeViewerProps {

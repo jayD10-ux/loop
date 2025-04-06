@@ -1,10 +1,10 @@
-
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect, useRef } from "react";
-import anime from "animejs";
+import * as animeJs from "animejs";
+const anime = animeJs.default;
 
 interface Author {
   name: string;

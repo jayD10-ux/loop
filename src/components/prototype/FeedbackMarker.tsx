@@ -1,7 +1,7 @@
-
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useRef } from "react";
-import anime from "animejs";
+import * as animeJs from "animejs";
+const anime = animeJs.default;
 
 interface FeedbackMarkerProps {
   id: string;
