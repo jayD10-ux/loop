@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { 
   Tabs, 
@@ -27,8 +26,7 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { FeedbackMarker } from "./FeedbackMarker";
 import { CommentThread } from "./CommentThread";
-import * as animeJs from "animejs";
-const anime = animeJs.default;
+import anime from "animejs/lib/anime.es.js";
 import { useNavigate } from "react-router-dom";
 
 interface PrototypeViewerProps {
@@ -43,14 +41,12 @@ export function PrototypeViewer({ id }: PrototypeViewerProps) {
   const [activeTab, setActiveTab] = useState("preview");
   const [controlsVisible, setControlsVisible] = useState(true);
   
-  // Refs for animation targets
   const headerRef = useRef<HTMLDivElement>(null);
   const controlsRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const commentThreadRef = useRef<HTMLDivElement>(null);
   const feedbackButtonRef = useRef<HTMLButtonElement>(null);
   
-  // Mock data - would be fetched from API in real app
   const prototype = {
     id,
     title: "E-commerce Dashboard Redesign",
@@ -104,7 +100,6 @@ export function PrototypeViewer({ id }: PrototypeViewerProps) {
   const handleDeviceChange = (device: string) => {
     setActiveDevice(device);
     
-    // Animate device change
     anime({
       targets: previewRef.current,
       width: device === "desktop" ? "100%" : 
@@ -116,10 +111,8 @@ export function PrototypeViewer({ id }: PrototypeViewerProps) {
 
   const toggleFeedbackMode = () => {
     setFeedbackMode(!feedbackMode);
-    // Clear selected comment when toggling mode
     setSelectedCommentId(null);
     
-    // Animate feedback button
     anime({
       targets: feedbackButtonRef.current,
       scale: [1, 1.1, 1],
@@ -127,7 +120,6 @@ export function PrototypeViewer({ id }: PrototypeViewerProps) {
       easing: "easeInOutQuad"
     });
     
-    // Animate feedback markers appearing/disappearing
     if (!feedbackMode) {
       anime({
         targets: ".feedback-marker",
@@ -138,7 +130,6 @@ export function PrototypeViewer({ id }: PrototypeViewerProps) {
         duration: 600
       });
       
-      // Animate add feedback button
       anime({
         targets: ".add-feedback-btn",
         translateY: [20, 0],
@@ -171,7 +162,6 @@ export function PrototypeViewer({ id }: PrototypeViewerProps) {
     setSelectedCommentId(newSelectedId);
     
     if (newSelectedId) {
-      // Animate comment thread appearing
       setTimeout(() => {
         anime({
           targets: commentThreadRef.current,
@@ -187,7 +177,6 @@ export function PrototypeViewer({ id }: PrototypeViewerProps) {
   const handleTabChange = (value: string) => {
     setActiveTab(value);
     
-    // Animate tab content change
     anime({
       targets: `[data-tab-content="${value}"]`,
       translateX: [10, 0],
@@ -200,7 +189,6 @@ export function PrototypeViewer({ id }: PrototypeViewerProps) {
   const toggleControlsVisibility = () => {
     setControlsVisible(!controlsVisible);
     
-    // Animate controls bar appearing/disappearing
     anime({
       targets: controlsRef.current,
       translateY: controlsVisible ? [0, -100] : [-100, 0],
@@ -211,7 +199,6 @@ export function PrototypeViewer({ id }: PrototypeViewerProps) {
   };
 
   const refreshPreview = () => {
-    // Animate refresh button
     anime({
       targets: ".refresh-button",
       rotate: 360,
@@ -219,7 +206,6 @@ export function PrototypeViewer({ id }: PrototypeViewerProps) {
       easing: "easeInOutQuad",
     });
     
-    // Simulate iframe refresh with visual feedback
     anime({
       targets: previewRef.current,
       opacity: [1, 0.7, 1],
@@ -229,7 +215,6 @@ export function PrototypeViewer({ id }: PrototypeViewerProps) {
   };
 
   const handleBack = () => {
-    // Animate exit before navigating back
     anime({
       targets: document.querySelector('.container'),
       opacity: [1, 0],
@@ -242,7 +227,6 @@ export function PrototypeViewer({ id }: PrototypeViewerProps) {
     });
   };
   
-  // Initial animation on component mount
   useEffect(() => {
     anime({
       targets: headerRef.current,
@@ -261,7 +245,6 @@ export function PrototypeViewer({ id }: PrototypeViewerProps) {
       easing: "easeOutQuad"
     });
 
-    // Set up hover detection near top of screen to show controls if hidden
     const handleMouseNearTop = (e: MouseEvent) => {
       if (!controlsVisible && e.clientY < 20) {
         setControlsVisible(true);
@@ -487,7 +470,6 @@ export const DashboardChart = ({ data }) => {
             </TabsContent>
           </Tabs>
           
-          {/* Visible tab content */}
           <div>
             {activeTab === "preview" && (
               <div 

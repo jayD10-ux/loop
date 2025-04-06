@@ -3,8 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect, useRef } from "react";
-import * as animeJs from "animejs";
-const anime = animeJs.default;
+import anime from "animejs/lib/anime.es.js";
 
 interface Author {
   name: string;

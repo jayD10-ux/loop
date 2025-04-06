@@ -1,7 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useRef } from "react";
-import * as animeJs from "animejs";
-const anime = animeJs.default;
+import anime from "animejs/lib/anime.es.js";
 
 interface FeedbackMarkerProps {
   id: string;
@@ -22,7 +21,6 @@ export function FeedbackMarker({
 }: FeedbackMarkerProps) {
   const markerRef = useRef<HTMLDivElement>(null);
   
-  // Animate when selected state changes
   useEffect(() => {
     if (isSelected) {
       anime({
