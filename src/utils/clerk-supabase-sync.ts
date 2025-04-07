@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { UserResource } from "@clerk/types";
 import type { Database } from "@/integrations/supabase/types";
@@ -61,16 +60,12 @@ export async function updateClerkMetadata(user: UserResource, metadata: Record<s
     // Create a merged metadata object
     const updatedMetadata = { ...user.publicMetadata, ...metadata };
     
-    // Update the user's public metadata using the correct method
-    await user.update({
-      // We can't set publicMetadata directly in this object
-    });
+    // Update the user's metadata using the correct method
+    // Using setPublicMetadata instead of trying to use publicMetadata in update
+    await user.update({});
     
-    // Set the public metadata separately using the publicMetadata property
-    // Accessing it directly as the error suggests
-    await user.update({ 
-      publicMetadata: updatedMetadata 
-    });
+    // Then use the proper method to set public metadata
+    await user.setPublicMetadata(updatedMetadata);
     
     return true;
   } catch (error) {
