@@ -60,9 +60,10 @@ export async function updateClerkMetadata(user: UserResource, metadata: Record<s
   try {
     const updatedMetadata = { ...user.publicMetadata, ...metadata };
     
+    // Use the correct method to update metadata in Clerk
     await user.update({
       publicMetadata: updatedMetadata
-    } as any); // Using type assertion to bypass TypeScript limitation
+    });
     
     return true;
   } catch (error) {

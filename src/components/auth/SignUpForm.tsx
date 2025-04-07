@@ -39,9 +39,8 @@ export function SignUpForm() {
         // Handle verification steps if needed
         const verifications = result.verifications;
         
-        // Cast the status to string to avoid TypeScript errors
-        // This is safer than assuming a specific enum type
-        if (verifications.emailAddress.status.toString() === "needs_verification") {
+        // The correct way to check status - convert both sides to string
+        if (String(verifications.emailAddress.status) === "needs_verification") {
           toast({
             title: "Email verification required",
             description: "Please check your email to verify your account.",
