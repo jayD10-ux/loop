@@ -58,12 +58,13 @@ export async function syncUserToSupabase(user: UserResource) {
  */
 export async function updateClerkMetadata(user: UserResource, metadata: Record<string, any>) {
   try {
+    // Create a merged metadata object
     const updatedMetadata = { ...user.publicMetadata, ...metadata };
     
-    // Use the correct method to update metadata in Clerk
-    await user.update({
-      publicMetadata: updatedMetadata
-    });
+    // Update the user with the correct method according to Clerk's API
+    // Use setPublicMetadata instead of directly specifying publicMetadata in update
+    await user.update({});  // Initialize the update
+    await user.setPublicMetadata(updatedMetadata);
     
     return true;
   } catch (error) {
