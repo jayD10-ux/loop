@@ -84,18 +84,22 @@ async function createProject(
   projectDescription?: string
 ) {
   try {
+    // Explicitly specify owner_type as 'user' or 'team' to match the expected enum values
     const { data: project, error } = await supabase
       .from('projects')
       .insert({
         name: projectName.trim(),
         description: projectDescription?.trim(),
         owner_id: ownerId,
-        owner_type: ownerType
+        owner_type: ownerType // This is already typed as 'user' | 'team'
       })
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('Project creation error details:', error);
+      throw error;
+    }
     console.log('Created project:', project);
     return project;
   } catch (error) {
@@ -147,6 +151,8 @@ export async function finalizeOnboarding(
   const { accountType, teamName, teamInvites, projectName, projectDescription } = data;
   
   try {
+    console.log('Starting onboarding finalization with data:', { accountType, teamName, projectName });
+    
     // Step 1: Create team if account type is 'team'
     let teamId: string | undefined;
     
@@ -164,10 +170,13 @@ export async function finalizeOnboarding(
     }
     
     // Step 4: Create project
+    // The owner type is explicitly typed as 'user' | 'team'
+    const ownerType: 'user' | 'team' = teamId ? 'team' : 'user';
+    
     await createProject(
       projectName,
       teamId || userId,
-      teamId ? 'team' : 'user',
+      ownerType,
       projectDescription
     );
     
