@@ -1,14 +1,39 @@
 
-import React from "react";
-import { useAuth } from "@clerk/clerk-react";
+import React, { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AuthLayoutProps {
   children: React.ReactNode;
 }
 
 export function AuthLayout({ children }: AuthLayoutProps) {
-  const { isLoaded, isSignedIn } = useAuth();
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [isSignedIn, setIsSignedIn] = useState(false);
+
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsSignedIn(!!session);
+      setIsLoaded(true);
+    };
+
+    // Set up auth state change listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setIsSignedIn(!!session);
+        setIsLoaded(true);
+      }
+    );
+
+    // Check for existing session
+    checkSession();
+
+    // Cleanup subscription on unmount
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   if (!isLoaded) {
     return (
