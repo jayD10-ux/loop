@@ -1,4 +1,3 @@
-
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useRef } from "react";
 
@@ -9,6 +8,7 @@ interface FeedbackMarkerProps {
   count: number;
   isSelected: boolean;
   onClick: () => void;
+  className?: string;
 }
 
 export function FeedbackMarker({ 
@@ -17,7 +17,8 @@ export function FeedbackMarker({
   y, 
   count, 
   isSelected, 
-  onClick 
+  onClick,
+  className = ''
 }: FeedbackMarkerProps) {
   const markerRef = useRef<HTMLDivElement>(null);
   
@@ -28,6 +29,7 @@ export function FeedbackMarker({
         feedback-marker absolute cursor-pointer 
         transition-all duration-300 ease-out
         ${isSelected ? 'scale-110 z-50' : 'scale-100 z-40'}
+        ${className}
       `} 
       style={{ 
         left: `${x}%`, 

@@ -3,7 +3,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect, useRef } from "react";
-import anime from "animejs/lib/anime.es.js";
 
 interface Author {
   name: string;
@@ -32,29 +31,9 @@ interface CommentThreadProps {
 
 export function CommentThread({ comment, onClose }: CommentThreadProps) {
   const [replyText, setReplyText] = useState("");
+  const [isClosing, setIsClosing] = useState(false);
   const threadRef = useRef<HTMLDivElement>(null);
   const repliesRef = useRef<HTMLDivElement>(null);
-  
-  useEffect(() => {
-    // Animate thread on mount
-    anime({
-      targets: threadRef.current,
-      translateY: [10, 0],
-      opacity: [0, 1],
-      duration: 400,
-      easing: "easeOutQuad"
-    });
-    
-    // Animate replies with staggered effect
-    anime({
-      targets: ".comment-reply",
-      translateY: [10, 0],
-      opacity: [0, 1],
-      delay: anime.stagger(100),
-      duration: 400,
-      easing: "easeOutQuad"
-    });
-  }, []);
 
   const handleSubmitReply = (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,32 +42,26 @@ export function CommentThread({ comment, onClose }: CommentThreadProps) {
       // In a real app, would send to API
       setReplyText("");
       
-      // Animation for successful reply
-      anime({
-        targets: ".reply-form",
-        translateY: [0, 5, 0],
-        duration: 400,
-        easing: "easeOutElastic(1, .6)"
-      });
+      // Add a temporary class for animation
+      const form = e.currentTarget as HTMLFormElement;
+      form.classList.add('reply-success');
+      setTimeout(() => {
+        form.classList.remove('reply-success');
+      }, 400);
     }
   };
   
   const handleClose = () => {
-    // Animate out before closing
-    anime({
-      targets: threadRef.current,
-      translateY: [0, 10],
-      opacity: [1, 0],
-      duration: 300,
-      easing: "easeInQuad",
-      complete: onClose
-    });
+    setIsClosing(true);
+    setTimeout(onClose, 300);
   };
 
   return (
     <div 
       ref={threadRef}
-      className="bg-card border rounded-lg p-4 shadow-lg"
+      className={`bg-card border rounded-lg p-4 shadow-lg transition-all duration-300 transform ${
+        isClosing ? 'translate-y-10 opacity-0' : 'translate-y-0 opacity-100'
+      }`}
     >
       <div className="flex justify-between items-start mb-4">
         <h3 className="font-semibold">Feedback Thread</h3>

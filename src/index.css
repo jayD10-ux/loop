@@ -111,3 +111,59 @@
 .feedback-marker:hover {
   transform: scale(1.15);
 }
+
+/* Animation classes */
+.slide-out {
+  transform: translateX(-100%);
+}
+
+.refresh-preview {
+  animation: refresh 0.6s ease-in-out;
+}
+
+.reply-success {
+  animation: bounce 0.4s ease-out;
+}
+
+/* Animation keyframes */
+@keyframes refresh {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+@keyframes bounce {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(5px); }
+  100% { transform: translateY(0); }
+}
+
+/* Transition classes */
+.feedback-marker {
+  opacity: 0;
+  transform: scale(0);
+  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+}
+
+.feedback-mode .feedback-marker {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.feedback-mode .add-feedback-btn {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* Add smooth transitions for all interactive elements */
+button, a, .transition-all {
+  transition: all 0.3s ease-out;
+}
+
+button:hover, a:hover {
+  transform: scale(1.05);
+}
+
+button:active, a:active {
+  transform: scale(0.95);
+}
