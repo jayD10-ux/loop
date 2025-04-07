@@ -1,6 +1,5 @@
 
 import { useState, useEffect } from "react";
-import { useUser } from "@clerk/clerk-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -9,7 +8,7 @@ interface Project {
   name: string;
   description: string | null;
   owner_id: string;
-  owner_type: 'user' | 'team'; // Reverted to strict union type
+  owner_type: 'user' | 'team';
   created_at: string;
   updated_at: string;
 }
@@ -21,18 +20,30 @@ interface Team {
 }
 
 export function useProjects() {
-  const { user } = useUser();
   const [projects, setProjects] = useState<Project[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTeamId, setActiveTeamId] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   
   // Sort options
   const [sortBy, setSortBy] = useState<'newest' | 'oldest'>('newest');
   const [searchQuery, setSearchQuery] = useState("");
   
   useEffect(() => {
-    if (!user) return;
+    // Get user session
+    async function getUserId() {
+      const { data: { session } } = await supabase.auth.getSession();
+      return session?.user?.id || null;
+    }
+    
+    getUserId().then(id => {
+      setUserId(id);
+    });
+  }, []);
+  
+  useEffect(() => {
+    if (!userId) return;
     
     async function fetchData() {
       setLoading(true);
@@ -41,7 +52,7 @@ export function useProjects() {
         const { data: teamMemberships, error: teamMembershipsError } = await supabase
           .from('team_members')
           .select('team_id')
-          .eq('user_id', user.id);
+          .eq('user_id', userId);
           
         if (teamMembershipsError) {
           throw new Error(`Failed to fetch team memberships: ${teamMembershipsError.message}`);
@@ -72,22 +83,15 @@ export function useProjects() {
         setTeams(userTeams);
         
         // 3. Fetch projects - both owned by user and by teams user belongs to
-        let filters = `owner_type.eq.user,owner_id.eq.${user.id}`;
-        
-        if (teamIds.length > 0) {
-          filters += `,or(owner_type.eq.team,owner_id.in.(${teamIds.join(',')}))`;
-        }
-        
         const { data: projectsData, error: projectsError } = await supabase
           .from('projects')
-          .select('*')
-          .or(filters);
+          .select('*');
           
         if (projectsError) {
           throw new Error(`Failed to fetch projects: ${projectsError.message}`);
         }
         
-        // Cast the owner_type field to the union type
+        // With RLS, we'll only get back the projects the user has access to
         setProjects(
           (projectsData || []).map(p => ({
             ...p,
@@ -107,7 +111,7 @@ export function useProjects() {
     }
     
     fetchData();
-  }, [user, activeTeamId]);
+  }, [userId, activeTeamId]);
   
   // Get filtered and sorted projects
   const filteredProjects = projects
