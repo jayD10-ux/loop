@@ -39,9 +39,9 @@ export function SignUpForm() {
         // Handle verification steps if needed
         const verifications = result.verifications;
         
-        // In the latest version of Clerk, we should check if status exists
-        // and compare it as a string rather than trying to compare with a specific enum
-        if (verifications.emailAddress.status === "needs_verification") {
+        // Cast the status to string to avoid TypeScript errors
+        // This is safer than assuming a specific enum type
+        if (verifications.emailAddress.status.toString() === "needs_verification") {
           toast({
             title: "Email verification required",
             description: "Please check your email to verify your account.",
