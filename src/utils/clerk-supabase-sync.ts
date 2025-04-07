@@ -3,6 +3,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { UserResource } from "@clerk/types";
 import type { Database } from "@/integrations/supabase/types";
 
+// Define the account type
+export type AccountType = 'individual' | 'team';
+
+// Define the clerk metadata interface
+export interface ClerkMetadata {
+  has_completed_onboarding: boolean;
+  account_type: AccountType;
+}
+
 /**
  * Synchronizes Clerk user data with Supabase profiles
  */
@@ -15,7 +24,7 @@ export async function syncUserToSupabase(user: UserResource) {
       .eq('id', user.id)
       .maybeSingle();
     
-    const accountType = user.publicMetadata.account_type as string || 'individual';
+    const accountType = (user.publicMetadata.account_type as AccountType) || 'individual';
     const hasCompletedOnboarding = user.publicMetadata.has_completed_onboarding as boolean || false;
     
     // If profile exists, update it
@@ -56,7 +65,7 @@ export async function syncUserToSupabase(user: UserResource) {
 /**
  * Updates Clerk metadata
  */
-export async function updateClerkMetadata(user: UserResource, metadata: Record<string, any>) {
+export async function updateClerkMetadata(user: UserResource, metadata: Partial<ClerkMetadata>) {
   try {
     // Create a merged metadata object
     const updatedMetadata = { ...user.publicMetadata, ...metadata };

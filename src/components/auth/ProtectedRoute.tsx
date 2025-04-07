@@ -1,6 +1,7 @@
 
 import { useAuth, useUser } from "@clerk/clerk-react";
 import { Navigate, useLocation } from "react-router-dom";
+import { ClerkMetadata } from "@/utils/clerk-supabase-sync";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -25,7 +26,8 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   }
   
   // Check if user has completed onboarding
-  const hasCompletedOnboarding = user?.publicMetadata?.has_completed_onboarding as boolean;
+  const metadata = user?.publicMetadata as Partial<ClerkMetadata>;
+  const hasCompletedOnboarding = metadata?.has_completed_onboarding === true;
   
   if (hasCompletedOnboarding === false && location.pathname !== "/onboarding") {
     return <Navigate to="/onboarding" replace />;
