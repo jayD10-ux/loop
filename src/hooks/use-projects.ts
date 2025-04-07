@@ -9,7 +9,7 @@ interface Project {
   name: string;
   description: string | null;
   owner_id: string;
-  owner_type: string; // Changed from "user" | "team" to string to match Supabase data
+  owner_type: 'user' | 'team'; // Reverted to strict union type
   created_at: string;
   updated_at: string;
 }
@@ -87,7 +87,13 @@ export function useProjects() {
           throw new Error(`Failed to fetch projects: ${projectsError.message}`);
         }
         
-        setProjects(projectsData || []);
+        // Cast the owner_type field to the union type
+        setProjects(
+          (projectsData || []).map(p => ({
+            ...p,
+            owner_type: p.owner_type as 'user' | 'team'
+          }))
+        );
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
         toast({
