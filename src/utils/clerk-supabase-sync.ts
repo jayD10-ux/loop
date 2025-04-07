@@ -59,10 +59,7 @@ export async function syncUserToSupabase(user: UserResource) {
 export async function updateClerkMetadata(user: UserResource, metadata: Record<string, any>) {
   try {
     await user.update({
-      publicMetadata: {
-        ...user.publicMetadata,
-        ...metadata
-      }
+      publicMetadata: metadata
     });
     
     return true;
