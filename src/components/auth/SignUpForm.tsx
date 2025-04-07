@@ -39,7 +39,7 @@ export function SignUpForm() {
         // Handle verification steps if needed
         const verifications = result.verifications;
         
-        if (verifications.emailAddress.status === "required") {
+        if (verifications.emailAddress.status === "needs_verification") {
           toast({
             title: "Email verification required",
             description: "Please check your email to verify your account.",

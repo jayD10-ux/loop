@@ -58,9 +58,11 @@ export async function syncUserToSupabase(user: UserResource) {
  */
 export async function updateClerkMetadata(user: UserResource, metadata: Record<string, any>) {
   try {
+    const updatedMetadata = { ...user.publicMetadata, ...metadata };
+    
     await user.update({
-      publicMetadata: metadata
-    });
+      publicMetadata: updatedMetadata
+    } as any); // Using type assertion to bypass TypeScript limitation
     
     return true;
   } catch (error) {
