@@ -29,6 +29,7 @@ export default function Onboarding() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [completed, setCompleted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [onboardingData, setOnboardingData] = useState<OnboardingData>({ 
     accountType: 'individual' 
   });
@@ -70,18 +71,21 @@ export default function Onboarding() {
   
   // Handle usage intent selection (individual vs team)
   const handleUsageIntent = (accountType: AccountType) => {
+    setError(null); // Clear any previous errors
     setOnboardingData({ ...onboardingData, accountType });
     setStep(accountType === 'individual' ? 3 : 2); // Skip team info for individuals
   };
   
   // Handle team info collection
   const handleTeamInfo = (data: { teamName: string; teamLogo?: File; teamInvites?: string[] }) => {
+    setError(null); // Clear any previous errors
     setOnboardingData({ ...onboardingData, ...data });
     setStep(3);
   };
   
   // Handle project info collection
   const handleProjectInfo = (data: { projectName: string; projectDescription?: string }) => {
+    setError(null); // Clear any previous errors
     setOnboardingData({ ...onboardingData, ...data });
     setStep(4);
   };
@@ -91,6 +95,8 @@ export default function Onboarding() {
     if (!user || !isLoaded) return;
     
     setLoading(true);
+    setError(null);
+    
     try {
       // Validate required data
       if (!onboardingData.projectName) {
@@ -100,6 +106,15 @@ export default function Onboarding() {
       if (onboardingData.accountType === 'team' && !onboardingData.teamName) {
         throw new Error("Team name is required");
       }
+      
+      // Log the data we're about to send
+      console.log("Attempting to finalize onboarding with:", {
+        accountType: onboardingData.accountType,
+        teamName: onboardingData.teamName,
+        teamInvites: onboardingData.teamInvites?.length || 0,
+        projectName: onboardingData.projectName,
+        hasDescription: !!onboardingData.projectDescription
+      });
       
       // Finalize onboarding by creating Supabase records and updating Clerk metadata
       const result = await finalizeOnboarding(user, {
@@ -124,9 +139,13 @@ export default function Onboarding() {
       });
     } catch (error) {
       console.error("Error completing onboarding:", error);
+      const errorMessage = error instanceof Error ? error.message : "Please try again.";
+      
+      setError(errorMessage);
+      
       toast({
         title: "Error completing onboarding",
-        description: error instanceof Error ? error.message : "Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -154,6 +173,7 @@ export default function Onboarding() {
   
   // Handle back navigation
   const handleBack = () => {
+    setError(null); // Clear any previous errors
     if (step > 1) {
       // For individuals going back from step 3, go to step 1
       if (onboardingData.accountType === 'individual' && step === 3) {
@@ -162,6 +182,12 @@ export default function Onboarding() {
         setStep(step - 1);
       }
     }
+  };
+  
+  // Handle retrying after an error
+  const handleRetry = () => {
+    setError(null);
+    completeOnboarding();
   };
   
   // Calculate the total number of steps based on account type
@@ -212,10 +238,11 @@ export default function Onboarding() {
       
       {step === 4 && (
         <ConfirmationStep 
-          onComplete={completeOnboarding} 
+          onComplete={error ? handleRetry : completeOnboarding}
           onBack={handleBack}
           loading={loading}
           data={onboardingData}
+          error={error}
         />
       )}
       
