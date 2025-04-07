@@ -27,6 +27,9 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   
   // Check if user has completed onboarding
   const metadata = user?.publicMetadata as Partial<ClerkMetadata>;
+  
+  // Handle various metadata states
+  // If metadata is completely undefined or has_completed_onboarding is explicitly false, redirect to onboarding
   const hasCompletedOnboarding = metadata?.has_completed_onboarding === true;
   
   if (hasCompletedOnboarding === false && location.pathname !== "/onboarding") {
