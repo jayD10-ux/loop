@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "@clerk/clerk-react";
@@ -12,7 +11,6 @@ import { finalizeOnboarding } from "@/utils/onboarding-finalizer";
 import { AccountType, ClerkMetadata } from "@/utils/clerk-supabase-sync";
 import { toast } from "@/hooks/use-toast";
 
-// Define the onboarding data structure
 interface OnboardingData {
   accountType: AccountType;
   teamName?: string;
@@ -22,7 +20,6 @@ interface OnboardingData {
   projectDescription?: string;
 }
 
-// Define the storage key for caching onboarding progress
 const ONBOARDING_STORAGE_KEY = 'onboarding_progress';
 
 export default function Onboarding() {
@@ -36,14 +33,12 @@ export default function Onboarding() {
   const { user, isLoaded } = useUser();
   const navigate = useNavigate();
   
-  // Load cached progress from localStorage on initial render
   useEffect(() => {
     try {
       const savedProgress = localStorage.getItem(ONBOARDING_STORAGE_KEY);
       if (savedProgress) {
         const parsed = JSON.parse(savedProgress);
         setOnboardingData(parsed.data || { accountType: 'individual' });
-        // Only restore step if it's valid and onboarding is not completed
         if (parsed.step && parsed.step >= 1 && parsed.step <= 4 && !parsed.completed) {
           setStep(parsed.step);
         }
@@ -56,7 +51,6 @@ export default function Onboarding() {
     }
   }, []);
   
-  // Save progress to localStorage when data or step changes
   useEffect(() => {
     try {
       localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify({
@@ -69,28 +63,24 @@ export default function Onboarding() {
     }
   }, [step, onboardingData, completed]);
   
-  // Handle usage intent selection (individual vs team)
   const handleUsageIntent = (accountType: AccountType) => {
-    setError(null); // Clear any previous errors
+    setError(null);
     setOnboardingData({ ...onboardingData, accountType });
-    setStep(accountType === 'individual' ? 3 : 2); // Skip team info for individuals
+    setStep(accountType === 'individual' ? 3 : 2);
   };
   
-  // Handle team info collection
   const handleTeamInfo = (data: { teamName: string; teamLogo?: File; teamInvites?: string[] }) => {
-    setError(null); // Clear any previous errors
+    setError(null);
     setOnboardingData({ ...onboardingData, ...data });
     setStep(3);
   };
   
-  // Handle project info collection
   const handleProjectInfo = (data: { projectName: string; projectDescription?: string }) => {
-    setError(null); // Clear any previous errors
+    setError(null);
     setOnboardingData({ ...onboardingData, ...data });
     setStep(4);
   };
   
-  // Complete onboarding and update Clerk metadata
   const completeOnboarding = async () => {
     if (!user || !isLoaded) return;
     
@@ -98,7 +88,6 @@ export default function Onboarding() {
     setError(null);
     
     try {
-      // Validate required data
       if (!onboardingData.projectName) {
         throw new Error("Project name is required");
       }
@@ -107,7 +96,6 @@ export default function Onboarding() {
         throw new Error("Team name is required");
       }
       
-      // Log the data we're about to send
       console.log("Attempting to finalize onboarding with:", {
         accountType: onboardingData.accountType,
         teamName: onboardingData.teamName,
@@ -116,7 +104,6 @@ export default function Onboarding() {
         hasDescription: !!onboardingData.projectDescription
       });
       
-      // Finalize onboarding by creating Supabase records and updating Clerk metadata
       const result = await finalizeOnboarding(user, {
         accountType: onboardingData.accountType,
         teamName: onboardingData.teamName,
@@ -129,7 +116,6 @@ export default function Onboarding() {
         throw new Error(result.error || "Failed to complete onboarding");
       }
       
-      // Mark as completed
       setCompleted(true);
       setStep(5);
       
@@ -153,29 +139,19 @@ export default function Onboarding() {
     }
   };
   
-  // Handle add prototype button on final step
   const handleAddPrototype = () => {
-    // Clear cached onboarding data
     localStorage.removeItem(ONBOARDING_STORAGE_KEY);
-    
-    // Redirect to add prototype page
     navigate('/add-prototype');
   };
   
-  // Handle go to dashboard button on final step
   const handleGoDashboard = () => {
-    // Clear cached onboarding data
     localStorage.removeItem(ONBOARDING_STORAGE_KEY);
-    
-    // Redirect to dashboard
     navigate('/');
   };
   
-  // Handle back navigation
   const handleBack = () => {
-    setError(null); // Clear any previous errors
+    setError(null);
     if (step > 1) {
-      // For individuals going back from step 3, go to step 1
       if (onboardingData.accountType === 'individual' && step === 3) {
         setStep(1);
       } else {
@@ -184,13 +160,11 @@ export default function Onboarding() {
     }
   };
   
-  // Handle retrying after an error
   const handleRetry = () => {
     setError(null);
     completeOnboarding();
   };
   
-  // Calculate the total number of steps based on account type
   const totalSteps = completed ? 5 : (onboardingData.accountType === 'individual' ? 3 : 4);
   
   if (!isLoaded) {

@@ -2,7 +2,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { AccountType } from "@/utils/clerk-supabase-sync";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, AlertTriangle } from "lucide-react";
 
 interface OnboardingData {
   accountType: AccountType;
@@ -18,9 +18,10 @@ interface ConfirmationStepProps {
   onBack: () => void;
   loading: boolean;
   data: OnboardingData;
+  error?: string | null;
 }
 
-export function ConfirmationStep({ onComplete, onBack, loading, data }: ConfirmationStepProps) {
+export function ConfirmationStep({ onComplete, onBack, loading, data, error }: ConfirmationStepProps) {
   return (
     <div className="space-y-6 py-4 opacity-0 animate-fade-in">
       <div className="space-y-2 text-center">
@@ -29,6 +30,16 @@ export function ConfirmationStep({ onComplete, onBack, loading, data }: Confirma
           Here's a summary of your setup. You can change these settings later.
         </p>
       </div>
+      
+      {error && (
+        <div className="bg-destructive/15 border border-destructive text-destructive p-3 rounded-md flex items-start gap-2">
+          <AlertTriangle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="font-medium">Error completing onboarding</p>
+            <p className="text-sm">{error}</p>
+          </div>
+        </div>
+      )}
       
       <div className="space-y-4 p-4 rounded-lg border bg-muted/40">
         <div className="space-y-1">
