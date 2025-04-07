@@ -1,4 +1,3 @@
-
 import { PrototypeCard } from "./PrototypeCard";
 import { useState, useEffect } from "react";
 
@@ -109,12 +108,19 @@ const MOCK_COLLECTIONS = [
 interface PrototypeGridProps {
   activeTab: string;
   searchQuery?: string;
+  customProjects?: any[]; // Add this prop to accept custom projects
 }
 
-export function PrototypeGrid({ activeTab, searchQuery = "" }: PrototypeGridProps) {
+export function PrototypeGrid({ activeTab, searchQuery = "", customProjects }: PrototypeGridProps) {
   const [prototypes, setPrototypes] = useState<any[]>([]);
 
   useEffect(() => {
+    // If customProjects is provided, use those instead of mock data
+    if (customProjects) {
+      setPrototypes(customProjects);
+      return;
+    }
+    
     let filteredPrototypes: any[] = [];
     
     switch (activeTab) {
@@ -146,7 +152,7 @@ export function PrototypeGrid({ activeTab, searchQuery = "" }: PrototypeGridProp
     }
 
     setPrototypes(filteredPrototypes);
-  }, [activeTab, searchQuery]);
+  }, [activeTab, searchQuery, customProjects]);
 
   return (
     <div className="container py-6">
