@@ -9,7 +9,7 @@ interface Project {
   name: string;
   description: string | null;
   owner_id: string;
-  owner_type: 'user' | 'team';
+  owner_type: string; // Changed from "user" | "team" to string to match Supabase data
   created_at: string;
   updated_at: string;
 }
