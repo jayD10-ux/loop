@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { UserResource } from "@clerk/types";
+import type { Database } from "@/integrations/supabase/types";
 
 /**
  * Synchronizes Clerk user data with Supabase profiles
@@ -12,7 +13,7 @@ export async function syncUserToSupabase(user: UserResource) {
       .from('profiles')
       .select('*')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
     
     const accountType = user.publicMetadata.account_type as string || 'individual';
     const hasCompletedOnboarding = user.publicMetadata.has_completed_onboarding as boolean || false;
