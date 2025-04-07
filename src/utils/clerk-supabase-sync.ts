@@ -61,10 +61,12 @@ export async function updateClerkMetadata(user: UserResource, metadata: Record<s
     // Create a merged metadata object
     const updatedMetadata = { ...user.publicMetadata, ...metadata };
     
-    // Use the correct method to update metadata in Clerk
-    await user.update({
-      publicMetadata: updatedMetadata
-    });
+    // Use Clerk's updateUser method to update publicMetadata
+    // The update method doesn't directly accept publicMetadata
+    await user.update({});
+    
+    // Need to use the private metadata functions to update publicMetadata
+    await user.addPublicMetadata(updatedMetadata);
     
     return true;
   } catch (error) {
