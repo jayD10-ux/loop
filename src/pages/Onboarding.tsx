@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { OnboardingLayout } from "@/components/onboarding/OnboardingLayout";
@@ -16,7 +15,7 @@ interface OnboardingData {
   teamName?: string;
   teamLogo?: File;
   teamInvites?: string[];
-  projectName?: string;
+  projectName: string;
   projectDescription?: string;
 }
 
@@ -35,7 +34,6 @@ export default function Onboarding() {
   const navigate = useNavigate();
   
   useEffect(() => {
-    // Load user session
     const loadSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       
@@ -48,7 +46,6 @@ export default function Onboarding() {
     
     loadSession();
     
-    // Load saved progress
     try {
       const savedProgress = localStorage.getItem(ONBOARDING_STORAGE_KEY);
       if (savedProgress) {
@@ -239,7 +236,6 @@ export default function Onboarding() {
   );
 }
 
-// Function to finalize onboarding
 async function finalizeOnboarding(
   userId: string,
   data: {
@@ -255,7 +251,6 @@ async function finalizeOnboarding(
   try {
     console.log('Starting onboarding finalization with data:', { accountType, teamName, projectName });
     
-    // Step 1: Create team if account type is 'team'
     let teamId: string | undefined;
     
     if (accountType === 'team' && teamName) {
@@ -263,10 +258,8 @@ async function finalizeOnboarding(
         const team = await maybeCreateTeam(userId, teamName);
         teamId = team.id;
         
-        // Step 2: Add user to team
         await addUserToTeam(userId, teamId);
         
-        // Step 3: Add team invites (if any)
         if (teamInvites && teamInvites.length > 0) {
           await addTeamInvites(teamId, userId, teamInvites);
         }
@@ -279,7 +272,6 @@ async function finalizeOnboarding(
       }
     }
     
-    // Step 4: Create project
     try {
       const ownerType: 'user' | 'team' = teamId ? 'team' : 'user';
       
@@ -297,7 +289,6 @@ async function finalizeOnboarding(
       };
     }
     
-    // Step 5: Update profile to mark onboarding as completed
     try {
       const { error } = await supabase
         .from('profiles')
@@ -329,10 +320,8 @@ async function finalizeOnboarding(
   }
 }
 
-// Helper function to create or get team
 async function maybeCreateTeam(userId: string, teamName: string) {
   try {
-    // Check if a team already exists for this user
     const { data: existingTeam, error: queryError } = await supabase
       .from('teams')
       .select('id, name')
@@ -349,7 +338,6 @@ async function maybeCreateTeam(userId: string, teamName: string) {
       return existingTeam;
     }
     
-    // Create a new team
     const { data: team, error: insertError } = await supabase
       .from('teams')
       .insert({
@@ -368,14 +356,12 @@ async function maybeCreateTeam(userId: string, teamName: string) {
     return team;
   } catch (error) {
     console.error('Error in maybeCreateTeam:', error);
-    throw error; // Re-throw to be handled by caller
+    throw error;
   }
 }
 
-// Helper function to add user to team
 async function addUserToTeam(userId: string, teamId: string) {
   try {
-    // Check if user is already a team member
     const { data: existingMember, error: queryError } = await supabase
       .from('team_members')
       .select('id')
@@ -392,7 +378,6 @@ async function addUserToTeam(userId: string, teamId: string) {
       return;
     }
     
-    // Add user as team owner
     const { error: insertError } = await supabase
       .from('team_members')
       .insert({
@@ -409,11 +394,10 @@ async function addUserToTeam(userId: string, teamId: string) {
     console.log('Added user to team as owner');
   } catch (error) {
     console.error('Error in addUserToTeam:', error);
-    throw error; // Re-throw to be handled by caller
+    throw error;
   }
 }
 
-// Helper function to add team invites
 async function addTeamInvites(teamId: string, invitedBy: string, emails: string[]) {
   if (!emails || emails.length === 0) return;
   
@@ -430,17 +414,15 @@ async function addTeamInvites(teamId: string, invitedBy: string, emails: string[
     
     if (error) {
       console.error('Error adding team invites:', error);
-      return; // Don't throw here, as this is optional
+      return;
     }
     
     console.log(`Added ${invites.length} team invites`);
   } catch (error) {
     console.error('Error in addTeamInvites:', error);
-    // Don't throw here, as this is optional and shouldn't block onboarding completion
   }
 }
 
-// Helper function to create project
 async function createProject(
   projectName: string, 
   ownerId: string, 
@@ -455,7 +437,6 @@ async function createProject(
       projectDescription 
     });
     
-    // First check if project already exists
     const { data: existingProject, error: queryError } = await supabase
       .from('projects')
       .select('id, name')
@@ -471,7 +452,6 @@ async function createProject(
       return existingProject;
     }
     
-    // Create the project
     const { data: project, error: insertError } = await supabase
       .from('projects')
       .insert({
@@ -496,6 +476,6 @@ async function createProject(
     return project;
   } catch (error) {
     console.error('Error in createProject:', error);
-    throw error; // Re-throw to be handled by caller
+    throw error;
   }
 }
