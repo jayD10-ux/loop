@@ -27,7 +27,8 @@ export default function Onboarding() {
   const [completed, setCompleted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [onboardingData, setOnboardingData] = useState<OnboardingData>({ 
-    accountType: 'individual' 
+    accountType: 'individual',
+    projectName: ''
   });
   const [userId, setUserId] = useState<string | null>(null);
   const [isSessionLoaded, setIsSessionLoaded] = useState(false);
