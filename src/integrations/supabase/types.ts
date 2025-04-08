@@ -179,8 +179,8 @@ export type Database = {
         Returns: undefined
       }
       complete_onboarding: {
-        Args: { user_id: string; account_type: string }
-        Returns: undefined
+        Args: { _user_id: string; _account_type: string }
+        Returns: Json
       }
       create_project: {
         Args: {
