@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { OnboardingLayout } from "@/components/onboarding/OnboardingLayout";
@@ -349,16 +348,32 @@ async function finalizeOnboarding(
     
     // Update user profile to mark onboarding as completed using RPC
     try {
-      const { error: profileError } = await supabase.rpc('complete_onboarding', {
+      const { data: profileResult, error: profileError } = await supabase.rpc('complete_onboarding', {
         user_id: userId,
         account_type: accountType
-      } as any);
+      });
       
       if (profileError) {
         console.error('Profile update error:', profileError);
         return { 
           success: false, 
           error: `Failed to update profile: ${profileError.message}`
+        };
+      }
+
+      if (!profileResult) {
+        console.error('Profile update returned no result');
+        return {
+          success: false,
+          error: 'Failed to update profile: No response from server'
+        };
+      }
+
+      if (!profileResult.success) {
+        console.error('Profile update failed:', profileResult);
+        return {
+          success: false,
+          error: profileResult.error || 'Failed to update profile'
         };
       }
     } catch (error) {
