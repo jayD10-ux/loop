@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { OnboardingLayout } from "@/components/onboarding/OnboardingLayout";
@@ -254,15 +255,17 @@ async function finalizeOnboarding(
     
     let teamId: string | undefined;
     
+    // Create team if account type is team
     if (accountType === 'team' && teamName) {
       try {
+        // Simplified direct insert approach to bypass potential RLS issues
         const { data: team, error: teamError } = await supabase
           .from('teams')
           .insert({
             name: teamName.trim(),
             owner_user_id: userId
           })
-          .select('id, name')
+          .select('id')
           .single();
         
         if (teamError) {
@@ -273,9 +276,17 @@ async function finalizeOnboarding(
           };
         }
         
+        if (!team) {
+          return {
+            success: false,
+            error: 'Team was created but no ID was returned'
+          };
+        }
+        
         teamId = team.id;
         console.log('Created team with ID:', teamId);
         
+        // Add user as team member with direct insert
         const { error: memberError } = await supabase
           .from('team_members')
           .insert({
@@ -294,8 +305,9 @@ async function finalizeOnboarding(
         
         console.log('Added user to team as owner');
         
+        // Process team invites if any
         if (teamInvites && teamInvites.length > 0) {
-          const invites = teamInvites.map(email => ({
+          const inviteRows = teamInvites.map(email => ({
             team_id: teamId as string,
             invited_email: email.trim().toLowerCase(),
             invited_by: userId
@@ -303,12 +315,13 @@ async function finalizeOnboarding(
           
           const { error: inviteError } = await supabase
             .from('team_invites')
-            .insert(invites);
+            .insert(inviteRows);
           
           if (inviteError) {
             console.error('Error adding team invites:', inviteError);
+            // Continue even if invites fail, as they are not critical
           } else {
-            console.log(`Added ${invites.length} team invites`);
+            console.log(`Added ${inviteRows.length} team invites`);
           }
         }
       } catch (error) {
@@ -320,19 +333,19 @@ async function finalizeOnboarding(
       }
     }
     
+    // Create project with direct insert
     try {
-      const ownerType: 'user' | 'team' = teamId ? 'team' : 'user';
+      const ownerType = teamId ? 'team' : 'user';
+      const ownerId = teamId || userId;
       
-      const { data: project, error: projectError } = await supabase
+      const { error: projectError } = await supabase
         .from('projects')
         .insert({
           name: projectName.trim(),
           description: projectDescription?.trim(),
-          owner_id: teamId || userId,
+          owner_id: ownerId,
           owner_type: ownerType
-        })
-        .select()
-        .single();
+        });
       
       if (projectError) {
         console.error('Project creation error:', projectError);
@@ -342,7 +355,7 @@ async function finalizeOnboarding(
         };
       }
       
-      console.log('Created project:', project);
+      console.log('Created project successfully');
     } catch (error) {
       console.error('Project creation error:', error);
       return { 
@@ -351,6 +364,7 @@ async function finalizeOnboarding(
       };
     }
     
+    // Update user profile to mark onboarding as completed
     try {
       const { error: profileError } = await supabase
         .from('profiles')
