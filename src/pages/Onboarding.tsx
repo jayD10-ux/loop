@@ -256,13 +256,60 @@ async function finalizeOnboarding(
     
     if (accountType === 'team' && teamName) {
       try {
-        const team = await maybeCreateTeam(userId, teamName);
-        teamId = team.id;
+        const { data: team, error: teamError } = await supabase
+          .from('teams')
+          .insert({
+            name: teamName.trim(),
+            owner_user_id: userId
+          })
+          .select('id, name')
+          .single();
         
-        await addUserToTeam(userId, teamId);
+        if (teamError) {
+          console.error('Team creation error:', teamError);
+          return { 
+            success: false, 
+            error: `Failed to create team: ${teamError.message}`
+          };
+        }
+        
+        teamId = team.id;
+        console.log('Created team with ID:', teamId);
+        
+        const { error: memberError } = await supabase
+          .from('team_members')
+          .insert({
+            team_id: teamId,
+            user_id: userId,
+            role: 'owner'
+          });
+        
+        if (memberError) {
+          console.error('Error adding user to team:', memberError);
+          return { 
+            success: false, 
+            error: `Failed to add user to team: ${memberError.message}`
+          };
+        }
+        
+        console.log('Added user to team as owner');
         
         if (teamInvites && teamInvites.length > 0) {
-          await addTeamInvites(teamId, userId, teamInvites);
+          const invites = teamInvites.map(email => ({
+            team_id: teamId as string,
+            invited_email: email.trim().toLowerCase(),
+            invited_by: userId
+          }));
+          
+          const { error: inviteError } = await supabase
+            .from('team_invites')
+            .insert(invites);
+          
+          if (inviteError) {
+            console.error('Error adding team invites:', inviteError);
+          } else {
+            console.log(`Added ${invites.length} team invites`);
+          }
         }
       } catch (error) {
         console.error('Team creation/setup error:', error);
@@ -276,12 +323,26 @@ async function finalizeOnboarding(
     try {
       const ownerType: 'user' | 'team' = teamId ? 'team' : 'user';
       
-      await createProject(
-        projectName,
-        teamId || userId,
-        ownerType,
-        projectDescription
-      );
+      const { data: project, error: projectError } = await supabase
+        .from('projects')
+        .insert({
+          name: projectName.trim(),
+          description: projectDescription?.trim(),
+          owner_id: teamId || userId,
+          owner_type: ownerType
+        })
+        .select()
+        .single();
+      
+      if (projectError) {
+        console.error('Project creation error:', projectError);
+        return { 
+          success: false, 
+          error: `Failed to create project: ${projectError.message}`
+        };
+      }
+      
+      console.log('Created project:', project);
     } catch (error) {
       console.error('Project creation error:', error);
       return { 
@@ -291,7 +352,7 @@ async function finalizeOnboarding(
     }
     
     try {
-      const { error } = await supabase
+      const { error: profileError } = await supabase
         .from('profiles')
         .update({
           has_completed_onboarding: true,
@@ -299,8 +360,12 @@ async function finalizeOnboarding(
         })
         .eq('id', userId);
       
-      if (error) {
-        throw new Error(`Failed to update profile: ${error.message}`);
+      if (profileError) {
+        console.error('Profile update error:', profileError);
+        return { 
+          success: false, 
+          error: `Failed to update profile: ${profileError.message}`
+        };
       }
     } catch (error) {
       console.error('Profile update error:', error);
@@ -318,165 +383,5 @@ async function finalizeOnboarding(
       success: false, 
       error: error instanceof Error ? error.message : 'An unknown error occurred' 
     };
-  }
-}
-
-async function maybeCreateTeam(userId: string, teamName: string) {
-  try {
-    const { data: existingTeam, error: queryError } = await supabase
-      .from('teams')
-      .select('id, name')
-      .eq('owner_user_id', userId)
-      .maybeSingle();
-    
-    if (queryError) {
-      console.error('Error checking for existing team:', queryError);
-      throw new Error(`Failed to check for existing team: ${queryError.message}`);
-    }
-    
-    if (existingTeam) {
-      console.log('Using existing team:', existingTeam);
-      return existingTeam;
-    }
-    
-    const { data: team, error: insertError } = await supabase
-      .from('teams')
-      .insert({
-        name: teamName.trim(),
-        owner_user_id: userId
-      })
-      .select()
-      .single();
-    
-    if (insertError) {
-      console.error('Error creating team:', insertError);
-      throw new Error(`Failed to create team: ${insertError.message}`);
-    }
-    
-    console.log('Created new team:', team);
-    return team;
-  } catch (error) {
-    console.error('Error in maybeCreateTeam:', error);
-    throw error;
-  }
-}
-
-async function addUserToTeam(userId: string, teamId: string) {
-  try {
-    const { data: existingMember, error: queryError } = await supabase
-      .from('team_members')
-      .select('id')
-      .match({ team_id: teamId, user_id: userId })
-      .maybeSingle();
-    
-    if (queryError) {
-      console.error('Error checking existing team membership:', queryError);
-      throw new Error(`Failed to check team membership: ${queryError.message}`);
-    }
-    
-    if (existingMember) {
-      console.log('User is already a team member');
-      return;
-    }
-    
-    const { error: insertError } = await supabase
-      .from('team_members')
-      .insert({
-        team_id: teamId,
-        user_id: userId,
-        role: 'owner'
-      });
-    
-    if (insertError) {
-      console.error('Error adding user to team:', insertError);
-      throw new Error(`Failed to add user to team: ${insertError.message}`);
-    }
-    
-    console.log('Added user to team as owner');
-  } catch (error) {
-    console.error('Error in addUserToTeam:', error);
-    throw error;
-  }
-}
-
-async function addTeamInvites(teamId: string, invitedBy: string, emails: string[]) {
-  if (!emails || emails.length === 0) return;
-  
-  try {
-    const invites = emails.map(email => ({
-      team_id: teamId,
-      invited_email: email.trim().toLowerCase(),
-      invited_by: invitedBy
-    }));
-    
-    const { error } = await supabase
-      .from('team_invites')
-      .insert(invites);
-    
-    if (error) {
-      console.error('Error adding team invites:', error);
-      return;
-    }
-    
-    console.log(`Added ${invites.length} team invites`);
-  } catch (error) {
-    console.error('Error in addTeamInvites:', error);
-  }
-}
-
-async function createProject(
-  projectName: string, 
-  ownerId: string, 
-  ownerType: 'user' | 'team',
-  projectDescription?: string
-) {
-  try {
-    console.log('Creating project with params:', { 
-      projectName, 
-      ownerId, 
-      ownerType, 
-      projectDescription 
-    });
-    
-    const { data: existingProject, error: queryError } = await supabase
-      .from('projects')
-      .select('id, name')
-      .eq('owner_id', ownerId)
-      .eq('owner_type', ownerType)
-      .eq('name', projectName.trim())
-      .maybeSingle();
-      
-    if (queryError) {
-      console.error('Error checking for existing project:', queryError);
-    } else if (existingProject) {
-      console.log('Project already exists, using:', existingProject);
-      return existingProject;
-    }
-    
-    const { data: project, error: insertError } = await supabase
-      .from('projects')
-      .insert({
-        name: projectName.trim(),
-        description: projectDescription?.trim(),
-        owner_id: ownerId,
-        owner_type: ownerType 
-      })
-      .select()
-      .maybeSingle();
-    
-    if (insertError) {
-      console.error('Project creation error details:', insertError);
-      throw new Error(`Failed to create project: ${insertError.message}`);
-    }
-    
-    if (!project) {
-      throw new Error('Project created but no data returned');
-    }
-    
-    console.log('Created project:', project);
-    return project;
-  } catch (error) {
-    console.error('Error in createProject:', error);
-    throw error;
   }
 }
