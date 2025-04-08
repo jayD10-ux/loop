@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { OnboardingLayout } from "@/components/onboarding/OnboardingLayout";
@@ -257,11 +258,11 @@ async function finalizeOnboarding(
     // Create team if account type is team
     if (accountType === 'team' && teamName) {
       try {
-        // Use RPC to bypass RLS policies completely
+        // Use RPC to bypass RLS policies completely, with explicit type casting
         const { data, error } = await supabase.rpc('create_team', {
           team_name: teamName.trim(),
           owner_id: userId
-        });
+        } as any);
         
         if (error) {
           console.error('Team creation error:', error);
@@ -279,7 +280,7 @@ async function finalizeOnboarding(
           team_id: teamId,
           member_id: userId,
           member_role: 'owner'
-        });
+        } as any);
         
         if (memberError) {
           console.error('Error adding user to team:', memberError);
@@ -298,7 +299,7 @@ async function finalizeOnboarding(
               team_id: teamId,
               email: email.trim().toLowerCase(),
               inviter_id: userId
-            });
+            } as any);
             
             if (inviteError) {
               console.error(`Error inviting ${email}:`, inviteError);
@@ -327,7 +328,7 @@ async function finalizeOnboarding(
         project_description: projectDescription?.trim() || null,
         owner_id: ownerId,
         owner_type: ownerType
-      });
+      } as any);
       
       if (projectError) {
         console.error('Project creation error:', projectError);
@@ -351,7 +352,7 @@ async function finalizeOnboarding(
       const { error: profileError } = await supabase.rpc('complete_onboarding', {
         user_id: userId,
         account_type: accountType
-      });
+      } as any);
       
       if (profileError) {
         console.error('Profile update error:', profileError);
