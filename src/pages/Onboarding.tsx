@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { OnboardingLayout } from "@/components/onboarding/OnboardingLayout";
@@ -258,42 +257,29 @@ async function finalizeOnboarding(
     // Create team if account type is team
     if (accountType === 'team' && teamName) {
       try {
-        // Simplified direct insert approach to bypass potential RLS issues
-        const { data: team, error: teamError } = await supabase
-          .from('teams')
-          .insert({
-            name: teamName.trim(),
-            owner_user_id: userId
-          })
-          .select('id')
-          .single();
+        // Use RPC to bypass RLS policies completely
+        const { data, error } = await supabase.rpc('create_team', {
+          team_name: teamName.trim(),
+          owner_id: userId
+        });
         
-        if (teamError) {
-          console.error('Team creation error:', teamError);
+        if (error) {
+          console.error('Team creation error:', error);
           return { 
             success: false, 
-            error: `Failed to create team: ${teamError.message}`
+            error: `Failed to create team: ${error.message}`
           };
         }
         
-        if (!team) {
-          return {
-            success: false,
-            error: 'Team was created but no ID was returned'
-          };
-        }
-        
-        teamId = team.id;
+        teamId = data;
         console.log('Created team with ID:', teamId);
         
-        // Add user as team member with direct insert
-        const { error: memberError } = await supabase
-          .from('team_members')
-          .insert({
-            team_id: teamId,
-            user_id: userId,
-            role: 'owner'
-          });
+        // Add user as team member using RPC
+        const { error: memberError } = await supabase.rpc('add_team_member', {
+          team_id: teamId,
+          member_id: userId,
+          member_role: 'owner'
+        });
         
         if (memberError) {
           console.error('Error adding user to team:', memberError);
@@ -307,21 +293,19 @@ async function finalizeOnboarding(
         
         // Process team invites if any
         if (teamInvites && teamInvites.length > 0) {
-          const inviteRows = teamInvites.map(email => ({
-            team_id: teamId as string,
-            invited_email: email.trim().toLowerCase(),
-            invited_by: userId
-          }));
-          
-          const { error: inviteError } = await supabase
-            .from('team_invites')
-            .insert(inviteRows);
-          
-          if (inviteError) {
-            console.error('Error adding team invites:', inviteError);
-            // Continue even if invites fail, as they are not critical
-          } else {
-            console.log(`Added ${inviteRows.length} team invites`);
+          for (const email of teamInvites) {
+            const { error: inviteError } = await supabase.rpc('create_team_invite', {
+              team_id: teamId,
+              email: email.trim().toLowerCase(),
+              inviter_id: userId
+            });
+            
+            if (inviteError) {
+              console.error(`Error inviting ${email}:`, inviteError);
+              // Continue even if invites fail, as they are not critical
+            } else {
+              console.log(`Invited ${email} to team`);
+            }
           }
         }
       } catch (error) {
@@ -333,19 +317,17 @@ async function finalizeOnboarding(
       }
     }
     
-    // Create project with direct insert
+    // Create project using RPC
     try {
       const ownerType = teamId ? 'team' : 'user';
       const ownerId = teamId || userId;
       
-      const { error: projectError } = await supabase
-        .from('projects')
-        .insert({
-          name: projectName.trim(),
-          description: projectDescription?.trim(),
-          owner_id: ownerId,
-          owner_type: ownerType
-        });
+      const { error: projectError } = await supabase.rpc('create_project', {
+        project_name: projectName.trim(),
+        project_description: projectDescription?.trim() || null,
+        owner_id: ownerId,
+        owner_type: ownerType
+      });
       
       if (projectError) {
         console.error('Project creation error:', projectError);
@@ -364,15 +346,12 @@ async function finalizeOnboarding(
       };
     }
     
-    // Update user profile to mark onboarding as completed
+    // Update user profile to mark onboarding as completed using RPC
     try {
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          has_completed_onboarding: true,
-          account_type: accountType
-        })
-        .eq('id', userId);
+      const { error: profileError } = await supabase.rpc('complete_onboarding', {
+        user_id: userId,
+        account_type: accountType
+      });
       
       if (profileError) {
         console.error('Profile update error:', profileError);
