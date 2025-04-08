@@ -174,7 +174,31 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      add_team_member: {
+        Args: { team_id: string; member_id: string; member_role: string }
+        Returns: undefined
+      }
+      complete_onboarding: {
+        Args: { user_id: string; account_type: string }
+        Returns: undefined
+      }
+      create_project: {
+        Args: {
+          project_name: string
+          owner_id: string
+          owner_type: string
+          project_description?: string
+        }
+        Returns: undefined
+      }
+      create_team: {
+        Args: { team_name: string; owner_id: string }
+        Returns: string
+      }
+      create_team_invite: {
+        Args: { team_id: string; email: string; inviter_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
