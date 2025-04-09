@@ -24,12 +24,25 @@ import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Download, Code, MessageSquare, Plus, Share2, RefreshCw } from "lucide-react";
+import { Sandpack } from "@codesandbox/sandpack-react";
 
 interface PrototypeViewerProps {
-  id: string;
+  prototype: {
+    id: string;
+    name: string;
+    description: string | null;
+    created_by: string;
+    created_at: string;
+    updated_at: string;
+    tech_stack: string;
+    files: Record<string, string>;
+    previewUrl?: string; // Optional, fallback to placeholder
+    figmaUrl?: string; // Optional, fallback to placeholder
+  };
+  onBack?: () => void; // Optional callback for back navigation
 }
 
-export function PrototypeViewer({ id }: PrototypeViewerProps) {
+export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
   const navigate = useNavigate();
   const [activeDevice, setActiveDevice] = useState("desktop");
   const [feedbackMode, setFeedbackMode] = useState(false);
@@ -41,26 +54,21 @@ export function PrototypeViewer({ id }: PrototypeViewerProps) {
   const previewRef = useRef<HTMLDivElement>(null);
   const commentThreadRef = useRef<HTMLDivElement>(null);
   
-  const prototype = {
-    id,
-    previewUrl: "https://placehold.co/1200x900/3B82F6/FFFFFF?text=Interactive+Prototype",
-    figmaUrl: "https://figma.com/example",
-    codeUrl: "https://github.com/example/repo",
-    comments: [
-      {
-        id: "c1",
-        x: 25,
-        y: 30,
-        author: {
-          name: "Maria Rodriguez",
-          avatarUrl: "https://i.pravatar.cc/150?img=6"
-        },
-        content: "The chart colors might be difficult for colorblind users. Can we adjust the palette?",
-        createdAt: "1 day ago",
-        replies: []
-      }
-    ]
-  };
+  // Mock comments data - in a real app, these would come from the database
+  const comments = [
+    {
+      id: "c1",
+      x: 25,
+      y: 30,
+      author: {
+        name: "Maria Rodriguez",
+        avatarUrl: "https://i.pravatar.cc/150?img=6"
+      },
+      content: "The chart colors might be difficult for colorblind users. Can we adjust the palette?",
+      createdAt: "1 day ago",
+      replies: []
+    }
+  ];
 
   const handleDeviceChange = (device: string) => {
     setActiveDevice(device);
@@ -80,38 +88,67 @@ export function PrototypeViewer({ id }: PrototypeViewerProps) {
   };
 
   const handleBack = () => {
-    navigate('/');
+    if (onBack) {
+      onBack();
+    } else {
+      navigate('/dashboard'); // Default fallback
+    }
   };
 
   const toggleControlsVisibility = () => {
     setControlsVisible(!controlsVisible);
   };
 
+  // Prepare Sandpack files from prototype
+  const sandpackFiles = Object.entries(prototype.files).reduce(
+    (acc, [path, content]) => {
+      const sandpackPath = path.startsWith('/') ? path.substring(1) : path;
+      return {
+        ...acc,
+        [sandpackPath]: { code: content as string },
+      };
+    },
+    {}
+  );
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'preview':
         return (
-          <iframe 
-            src={prototype.previewUrl}
-            className="preview-frame"
-            title="Preview"
-          />
+          <div className={`device-container device-${activeDevice}`}>
+            <iframe 
+              src={prototype.previewUrl || "https://placehold.co/1200x900/3B82F6/FFFFFF?text=Interactive+Prototype"}
+              className="preview-frame"
+              title="Preview"
+            />
+          </div>
         );
       case 'code':
         return (
-          <div className="bg-loop-gray-800 text-white p-4 rounded-md overflow-auto h-full">
-            <pre className="text-sm">
-              <code>{`// Example code content`}</code>
-            </pre>
+          <div className="h-full">
+            <Sandpack
+              template={prototype.tech_stack as "react" | "vanilla"}
+              files={sandpackFiles}
+              options={{
+                showNavigator: true,
+                showTabs: true,
+                showLineNumbers: true,
+                showInlineErrors: true,
+                editorHeight: '100%',
+                editorWidthPercentage: 40,
+              }}
+            />
           </div>
         );
       case 'design':
         return (
-          <iframe 
-            src={prototype.figmaUrl}
-            className="preview-frame"
-            title="Figma Design"
-          />
+          <div className="device-container">
+            <iframe 
+              src={prototype.figmaUrl || "https://placehold.co/1200x900/EC4899/FFFFFF?text=Figma+Design"}
+              className="preview-frame"
+              title="Figma Design"
+            />
+          </div>
         );
       default:
         return null;
@@ -194,7 +231,7 @@ export function PrototypeViewer({ id }: PrototypeViewerProps) {
         
         {feedbackMode && activeTab === 'preview' && (
           <>
-            {prototype.comments.map((comment) => (
+            {comments.map((comment) => (
               <FeedbackMarker
                 key={comment.id}
                 id={comment.id}
@@ -211,7 +248,7 @@ export function PrototypeViewer({ id }: PrototypeViewerProps) {
         {selectedCommentId && (
           <div className="absolute bottom-4 right-4" ref={commentThreadRef}>
             <CommentThread 
-              comment={prototype.comments.find(c => c.id === selectedCommentId)!}
+              comment={comments.find(c => c.id === selectedCommentId)!}
               onClose={() => setSelectedCommentId(null)}
             />
           </div>

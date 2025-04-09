@@ -3,8 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Share2, Download, MessageSquare } from "lucide-react";
-import { Sandpack } from "@codesandbox/sandpack-react";
+import { Share2, Download, MessageSquare } from "lucide-react";
+import { PrototypeViewer } from "@/components/prototype/PrototypeViewer";
 
 interface Prototype {
   id: string;
@@ -83,30 +83,12 @@ const PrototypeView = () => {
     );
   }
 
-  const sandpackFiles = prototype ? Object.entries(prototype.files).reduce(
-    (acc, [path, content]) => {
-      const sandpackPath = path.startsWith('/') ? path.substring(1) : path;
-      return {
-        ...acc,
-        [sandpackPath]: { code: content as string },
-      };
-    },
-    {}
-  ) : {};
-
   return (
     <div className="min-h-screen flex flex-col w-full">
       <Header />
       <div className="bg-muted/30 border-b">
         <div className="container py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => navigate('/dashboard')}
-            >
-              <ArrowLeft className="h-4 w-4 mr-1" /> Back
-            </Button>
             <div>
               <h1 className="text-xl font-semibold">{prototype.name}</h1>
               <p className="text-sm text-muted-foreground">
@@ -125,20 +107,10 @@ const PrototypeView = () => {
         </div>
       </div>
       <main className="flex-1 flex flex-col">
-        <div className="flex-1 h-[calc(100vh-10rem)]">
-          <Sandpack
-            template={prototype.tech_stack as "react" | "vanilla"}
-            files={sandpackFiles}
-            options={{
-              showNavigator: true,
-              showTabs: true,
-              showLineNumbers: true,
-              showInlineErrors: true,
-              editorHeight: '100%',
-              editorWidthPercentage: 40,
-            }}
-          />
-        </div>
+        <PrototypeViewer 
+          prototype={prototype} 
+          onBack={() => navigate('/dashboard')}
+        />
       </main>
     </div>
   );

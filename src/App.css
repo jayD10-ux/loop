@@ -23,6 +23,45 @@
   border: none;
   margin: 0;
   padding: 0;
+  transition: all 0.3s ease-out;
+}
+
+/* Device specific styles */
+.device-desktop .preview-frame {
+  width: 100%;
+  height: 100%;
+}
+
+.device-tablet .preview-frame {
+  width: 768px;
+  height: 1024px;
+  max-width: 100%;
+  max-height: 100%;
+  margin: 0 auto;
+  border: 16px solid #333;
+  border-radius: 12px;
+}
+
+.device-mobile .preview-frame {
+  width: 375px;
+  height: 667px;
+  max-width: 100%;
+  max-height: 100%;
+  margin: 0 auto;
+  border: 12px solid #333;
+  border-radius: 24px;
+}
+
+/* Add device container for centering and styling device previews */
+.device-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+  overflow: auto;
+  background-color: #f5f5f5;
+  padding: 20px;
 }
 
 .logo {
