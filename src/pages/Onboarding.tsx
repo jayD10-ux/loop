@@ -9,6 +9,7 @@ import { FinalStep } from "@/components/onboarding/FinalStep";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { AccountType } from "@/types/auth";
+import { CompleteOnboardingParams, OnboardingResult } from "@/types/supabase";
 
 interface OnboardingData {
   accountType: AccountType;
@@ -242,6 +243,7 @@ async function finalizeOnboarding(
   data: {
     accountType: AccountType;
     teamName?: string;
+    teamLogo?: File;
     teamInvites?: string[];
     projectName: string;
     projectDescription?: string;
@@ -249,141 +251,143 @@ async function finalizeOnboarding(
 ) {
   const { accountType, teamName, teamInvites, projectName, projectDescription } = data;
   
-  try {
-    console.log('Starting onboarding finalization with data:', { accountType, teamName, projectName });
-    
-    let teamId: string | undefined;
-    
-    if (accountType === 'team' && teamName) {
-      try {
-        const { data, error } = await supabase.rpc('create_team', {
-          team_name: teamName.trim(),
-          owner_id: userId
-        });
-        
-        if (error) {
-          console.error('Team creation error:', error);
-          return { 
-            success: false, 
-            error: `Failed to create team: ${error.message}`
-          };
-        }
-        
-        teamId = data;
-        console.log('Created team with ID:', teamId);
-        
-        const { error: memberError } = await supabase.rpc('add_team_member', {
-          team_id: teamId,
-          member_id: userId,
-          member_role: 'owner'
-        });
-        
-        if (memberError) {
-          console.error('Error adding user to team:', memberError);
-          return { 
-            success: false, 
-            error: `Failed to add user to team: ${memberError.message}`
-          };
-        }
-        
-        console.log('Added user to team as owner');
-        
-        if (teamInvites && teamInvites.length > 0) {
-          for (const email of teamInvites) {
-            const { error: inviteError } = await supabase.rpc('create_team_invite', {
-              team_id: teamId,
-              email: email.trim().toLowerCase(),
-              inviter_id: userId
-            });
-            
-            if (inviteError) {
-              console.error(`Error inviting ${email}:`, inviteError);
-            } else {
-              console.log(`Invited ${email} to team`);
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Team creation/setup error:', error);
-        return { 
-          success: false, 
-          error: error instanceof Error ? error.message : 'Failed to set up team'
-        };
-      }
-    }
-    
+  let teamId: string | undefined;
+  
+  if (accountType === 'team' && teamName) {
     try {
-      const ownerType = teamId ? 'team' : 'user';
-      const ownerId = teamId || userId;
-      
-      const { error: projectError } = await supabase.rpc('create_project', {
-        project_name: projectName.trim(),
-        project_description: projectDescription?.trim() || null,
-        owner_id: ownerId,
-        owner_type: ownerType
+      const { data, error } = await supabase.rpc('create_team', {
+        team_name: teamName.trim(),
+        owner_id: userId
       });
       
-      if (projectError) {
-        console.error('Project creation error:', projectError);
+      if (error) {
+        console.error('Team creation error:', error);
         return { 
           success: false, 
-          error: `Failed to create project: ${projectError.message}`
+          error: `Failed to create team: ${error.message}`
         };
       }
       
-      console.log('Created project successfully');
+      teamId = data;
+      console.log('Created team with ID:', teamId);
+      
+      const { error: memberError } = await supabase.rpc('add_team_member', {
+        team_id: teamId,
+        member_id: userId,
+        role: 'owner'
+      });
+      
+      if (memberError) {
+        console.error('Error adding user to team:', memberError);
+        return { 
+          success: false, 
+          error: `Failed to add user to team: ${memberError.message}`
+        };
+      }
+      
+      console.log('Added user to team as owner');
+      
+      if (teamInvites && teamInvites.length > 0) {
+        for (const email of teamInvites) {
+          const { error: inviteError } = await supabase.rpc('create_team_invite', {
+            team_id: teamId,
+            email: email.trim().toLowerCase(),
+            inviter_id: userId
+          });
+          
+          if (inviteError) {
+            console.error(`Error inviting ${email}:`, inviteError);
+          } else {
+            console.log(`Invited ${email} to team`);
+          }
+        }
+      }
     } catch (error) {
-      console.error('Project creation error:', error);
+      console.error('Team setup error:', error);
       return { 
         success: false, 
-        error: error instanceof Error ? error.message : 'Failed to create project'
+        error: `Failed to set up team: ${(error as Error).message}`
       };
     }
+  }
+  
+  try {
+    const ownerType = teamId ? 'team' : 'user';
+    const ownerId = teamId || userId;
+    const { error: projectError } = await supabase.rpc('create_project', {
+      project_name: projectName.trim(),
+      project_description: projectDescription?.trim() || null,
+      owner_id: ownerId,
+      owner_type: ownerType
+    });
     
-    try {
-      const { data: profileResult, error: profileError } = await supabase.rpc('complete_onboarding', {
-        user_id: userId,
-        account_type: accountType
-      } as any);
+    if (projectError) {
+      console.error('Project creation error:', projectError);
+      return { 
+        success: false, 
+        error: `Failed to create project: ${projectError.message}`
+      };
+    }
+  } catch (error) {
+    console.error('Project creation error:', error);
+    return { 
+      success: false, 
+      error: `Failed to create project: ${(error as Error).message}`
+    };
+  }
+  
+  try {
+    // Direct SQL update approach rather than relying on a function
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .update({
+        account_type: accountType,
+        has_completed_onboarding: true
+      })
+      .eq('id', userId);
+    
+    if (profileError) {
+      console.error('Profile update error:', profileError);
       
-      if (profileError) {
-        console.error('Profile update error:', profileError);
+      // Try inserting if update fails
+      if (profileError.code === 'PGRST116') {
+        try {
+          const { error: insertError } = await supabase
+            .from('profiles')
+            .insert([{
+              id: userId,
+              account_type: accountType,
+              has_completed_onboarding: true
+            }]);
+          
+          if (insertError) {
+            console.error('Profile insert error:', insertError);
+            return { 
+              success: false, 
+              error: `Failed to create profile: ${insertError.message}`
+            };
+          }
+        } catch (insertErr) {
+          console.error('Profile insert exception:', insertErr);
+          return { 
+            success: false, 
+            error: `Failed to create profile: ${(insertErr as Error).message}`
+          };
+        }
+      } else {
         return { 
           success: false, 
           error: `Failed to update profile: ${profileError.message}`
         };
       }
-
-      if (!profileResult) {
-        console.error('Profile update returned no result');
-        return {
-          success: false,
-          error: 'Failed to update profile: No response from server'
-        };
-      }
-
-      if (!(profileResult as any).success) {
-        console.error('Profile update failed:', profileResult);
-        return {
-          success: false,
-          error: (profileResult as any).error || 'Failed to update profile'
-        };
-      }
-    } catch (error) {
-      console.error('Profile update error:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Failed to update user profile'
-      };
     }
     
-    console.log('Onboarding finalized successfully');
     return { success: true };
   } catch (error) {
-    console.error('Error finalizing onboarding:', error);
+    console.error('Error completing onboarding:', error);
     return { 
       success: false, 
-      error: error instanceof Error ? error.message : 'An unknown error occurred' 
+      error: `Failed to complete onboarding: ${(error as Error).message}`
     };
   }
 }
