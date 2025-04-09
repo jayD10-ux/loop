@@ -1,50 +1,37 @@
 
-import { PlusCircle, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+import { Plus } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface EmptyStateProps {
-  isTeam: boolean;
+  isTeam?: boolean;
   teamName?: string;
+  onAddPrototype?: () => void;
 }
 
-export function EmptyState({ isTeam, teamName }: EmptyStateProps) {
-  const navigate = useNavigate();
-  
+export function EmptyState({ isTeam = false, teamName = "team", onAddPrototype }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center py-16 px-4 text-center border rounded-lg bg-muted/10">
-      <div className="mb-4 p-3 rounded-full bg-primary/10">
-        {isTeam ? (
-          <Users className="h-8 w-8 text-primary" />
-        ) : (
-          <PlusCircle className="h-8 w-8 text-primary" />
-        )}
+    <div className="flex flex-col items-center justify-center p-12 text-center border-2 border-dashed rounded-lg mt-8">
+      <div className="w-16 h-16 flex items-center justify-center rounded-full bg-primary/10 mb-4">
+        <Plus className="h-8 w-8 text-primary" />
       </div>
-      
-      <h3 className="text-xl font-semibold mb-2">
-        {isTeam 
-          ? `No projects found for ${teamName || 'your team'}`
-          : "You haven't created any projects yet"}
-      </h3>
-      
-      <p className="text-muted-foreground mb-6 max-w-md">
+      <h2 className="text-xl font-semibold mb-2">
+        {isTeam ? `No ${teamName} prototypes yet` : "No prototypes yet"}
+      </h2>
+      <p className="text-muted-foreground max-w-md mb-6">
         {isTeam
-          ? "Get started by creating your first team project or invite teammates to collaborate."
-          : "Create your first project to start sharing and receiving feedback."}
+          ? `Get started by adding your first prototype to the ${teamName} team.`
+          : "Get started by adding your first prototype to your workspace."}
       </p>
-      
-      <div className="flex flex-col sm:flex-row gap-4">
-        <Button onClick={() => navigate("/add-prototype")}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Add a prototype
+      <div className="flex gap-4">
+        <Button asChild>
+          <Link to="/add-prototype">
+            Create New Prototype
+          </Link>
         </Button>
-        
-        {isTeam && (
-          <Button variant="outline" onClick={() => navigate("/team/invite")}>
-            <Users className="mr-2 h-4 w-4" />
-            Invite teammates
-          </Button>
-        )}
+        <Button variant="outline" onClick={onAddPrototype}>
+          Upload ZIP
+        </Button>
       </div>
     </div>
   );
