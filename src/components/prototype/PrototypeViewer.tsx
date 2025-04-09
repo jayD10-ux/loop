@@ -114,14 +114,63 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
   const renderTabContent = () => {
     switch (activeTab) {
       case 'preview':
+        // For debugging, let's log the available files
+        console.log("Available files:", Object.keys(sandpackFiles));
+        
+        // Let's determine a proper entry point or fallback to a simple HTML renderer
+        const hasIndexHtml = sandpackFiles["index.html"] !== undefined;
+        const hasIndexJs = sandpackFiles["index.js"] !== undefined || sandpackFiles["src/index.js"] !== undefined;
+        
+        if (!hasIndexHtml && !hasIndexJs) {
+          // If no proper entry files, create a simple HTML display with file contents
+          return (
+            <div className="w-full h-full p-4 bg-white overflow-auto">
+              <h2 className="text-xl font-semibold mb-4">Prototype Preview</h2>
+              <p className="text-muted-foreground mb-4">Showing content of prototype files:</p>
+              {Object.entries(sandpackFiles).map(([filename, fileContent]) => (
+                <div key={filename} className="mb-6">
+                  <h3 className="text-md font-medium mb-2">{filename}</h3>
+                  <pre className="p-3 bg-gray-100 rounded overflow-auto text-sm">
+                    {typeof fileContent === 'object' && fileContent !== null && 'code' in fileContent 
+                      ? (fileContent as {code: string}).code 
+                      : String(fileContent)}
+                  </pre>
+                </div>
+              ))}
+            </div>
+          );
+        }
+        
         return (
-          <div className="w-full h-full">
-            <iframe 
-              src={prototype.previewUrl || "https://placehold.co/1200x900/3B82F6/FFFFFF?text=Interactive+Prototype"}
-              className="w-full h-full border-none"
-              title="Preview"
-              allow="accelerometer; camera; encrypted-media; geolocation; gyroscope; microphone; midi; payment; usb; xr-spatial-tracking"
-              sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+          <div className="w-full h-full sandpack-preview-container">
+            <Sandpack
+              template={prototype.tech_stack as "react" | "vanilla"}
+              files={sandpackFiles}
+              options={{
+                showNavigator: false,
+                showTabs: false,
+                showLineNumbers: false,
+                showInlineErrors: true, // Show errors to help debug
+                editorHeight: '0',
+                editorWidthPercentage: 0,
+                classes: {
+                  'sp-preview': 'preview-only-mode',
+                  'sp-layout': 'preview-only-layout',
+                  'sp-stack': 'preview-only-stack',
+                  'sp-wrapper': 'preview-only-wrapper',
+                }
+              }}
+              customSetup={{
+                entry: hasIndexHtml ? "index.html" : (
+                  sandpackFiles["index.js"] ? "index.js" : "src/index.js"
+                ),
+                dependencies: {
+                  // Add common dependencies that might be needed
+                  "react": "^18.0.0",
+                  "react-dom": "^18.0.0"
+                }
+              }}
+              theme="light"
             />
           </div>
         );

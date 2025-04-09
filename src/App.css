@@ -99,3 +99,68 @@
 .read-the-docs {
   color: #888;
 }
+
+/* Sandpack preview customization */
+.sandpack-preview-container {
+  border: none;
+  overflow: hidden;
+}
+
+.sandpack-preview-container .sp-wrapper {
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  height: 100% !important;
+}
+
+.sandpack-preview-container .sp-layout {
+  border: none !important;
+  border-radius: 0 !important;
+  background: white !important;
+  height: 100% !important;
+}
+
+.sandpack-preview-container .sp-stack {
+  height: 100% !important;
+  border: none !important;
+}
+
+.sandpack-preview-container .sp-preview {
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: white !important;
+}
+
+.sandpack-preview-container .sp-preview-container {
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.sandpack-preview-container .sp-preview-iframe {
+  height: 100% !important;
+  width: 100% !important;
+  border: none !important;
+  background: white !important;
+}
+
+.preview-only-mode {
+  height: 100% !important;
+  border: none !important;
+}
+
+.preview-only-layout {
+  border: none !important;
+  height: 100% !important;
+}
+
+.preview-only-stack {
+  border: none !important;
+  height: 100% !important;
+}
+
+.preview-only-wrapper {
+  border: none !important;
+  height: 100% !important;
+}
