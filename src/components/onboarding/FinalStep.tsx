@@ -18,8 +18,8 @@ export function FinalStep({ onAddPrototype, onGoDashboard }: FinalStepProps) {
     // Call the provided callback
     onGoDashboard();
     
-    // Ensure navigation to the dashboard
-    navigate('/');
+    // Navigate directly to the dashboard page
+    navigate('/dashboard');
   };
 
   return (
