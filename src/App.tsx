@@ -1,9 +1,8 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
@@ -31,7 +30,9 @@ const AppRoutes = () => {
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/add-prototype" element={<ProtectedRoute><AddPrototype /></ProtectedRoute>} />
         <Route path="/prototype/:id" element={<ProtectedRoute><PrototypeView /></ProtectedRoute>} />
-        <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+        
+        {/* Redirect onboarding to dashboard */}
+        <Route path="/onboarding" element={<ProtectedRoute><Navigate to="/dashboard" replace /></ProtectedRoute>} />
         
         {/* 404 route */}
         <Route path="*" element={<NotFound />} />

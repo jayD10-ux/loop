@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,7 +9,6 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isSignedIn, setIsSignedIn] = useState(false);
-  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean | null>(null);
   const location = useLocation();
   
   useEffect(() => {
@@ -20,10 +18,8 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         setIsSignedIn(!!session);
         
         if (session?.user) {
-          // Check if user has completed onboarding
-          checkOnboardingStatus(session.user.id);
+          setIsLoaded(true);
         } else {
-          setHasCompletedOnboarding(null);
           setIsLoaded(true);
         }
       }
@@ -35,10 +31,8 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       setIsSignedIn(!!session);
       
       if (session?.user) {
-        // Check if user has completed onboarding
-        await checkOnboardingStatus(session.user.id);
+        setIsLoaded(true);
       } else {
-        setHasCompletedOnboarding(null);
         setIsLoaded(true);
       }
     };
@@ -50,28 +44,6 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
       subscription.unsubscribe();
     };
   }, []);
-  
-  const checkOnboardingStatus = async (userId: string) => {
-    try {
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('has_completed_onboarding')
-        .eq('id', userId)
-        .maybeSingle();
-      
-      if (error) {
-        console.error("Error fetching profile:", error);
-        setHasCompletedOnboarding(null);
-      } else {
-        setHasCompletedOnboarding(profile?.has_completed_onboarding ?? false);
-      }
-    } catch (error) {
-      console.error("Error checking onboarding status:", error);
-      setHasCompletedOnboarding(null);
-    } finally {
-      setIsLoaded(true);
-    }
-  };
   
   if (!isLoaded) {
     return (
@@ -86,15 +58,8 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   }
   
-  // Check if user has completed onboarding
-  if (hasCompletedOnboarding === false && location.pathname !== "/onboarding") {
-    return <Navigate to="/onboarding" replace />;
-  }
-  
-  // If we're at the onboarding path but user has already completed onboarding, redirect to dashboard
-  if (hasCompletedOnboarding === true && location.pathname === "/onboarding") {
-    return <Navigate to="/dashboard" replace />;
-  }
+  // Always treat user as if they completed onboarding
+  // No longer checking or redirecting based on onboarding status
   
   return <>{children}</>;
 }
