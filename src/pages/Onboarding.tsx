@@ -274,7 +274,7 @@ async function finalizeOnboarding(
       const { error: memberError } = await supabase.rpc('add_team_member', {
         team_id: teamId,
         member_id: userId,
-        role: 'owner'
+        member_role: 'owner'
       });
       
       if (memberError) {
@@ -337,7 +337,6 @@ async function finalizeOnboarding(
   }
   
   try {
-    // Direct SQL update approach rather than relying on a function
     const { error: profileError } = await supabase
       .from('profiles')
       .update({
@@ -349,7 +348,6 @@ async function finalizeOnboarding(
     if (profileError) {
       console.error('Profile update error:', profileError);
       
-      // Try inserting if update fails
       if (profileError.code === 'PGRST116') {
         try {
           const { error: insertError } = await supabase
