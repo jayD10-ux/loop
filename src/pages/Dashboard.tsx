@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Header } from "@/components/layout/Header";
 import { PrototypeGrid } from "@/components/dashboard/PrototypeGrid";
@@ -49,8 +48,8 @@ const Dashboard = () => {
     try {
       setLoadingPrototypes(true);
       // Use the new syntax that doesn't require TypeScript type checking
-      const { data, error } = await supabase
-        .from('prototypes')
+      const { data, error } = await (supabase
+        .from('prototypes') as any)
         .select('*')
         .order('created_at', { ascending: false });
       
@@ -59,7 +58,19 @@ const Dashboard = () => {
         return;
       }
       
-      setPrototypes(data || []);
+      // Transform the data to match the Prototype interface
+      const transformedData = (data || []).map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        description: item.description,
+        created_by: item.created_by,
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+        tech_stack: item.tech_stack || '',
+        files: item.files || {}
+      }));
+      
+      setPrototypes(transformedData);
     } catch (err) {
       console.error('Error in fetchPrototypes:', err);
     } finally {

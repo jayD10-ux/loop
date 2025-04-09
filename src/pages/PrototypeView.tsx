@@ -5,7 +5,6 @@ import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Share2, Download, MessageSquare } from "lucide-react";
 import { Sandpack } from "@codesandbox/sandpack-react";
-import "@codesandbox/sandpack-react/dist/index.css";
 
 interface Prototype {
   id: string;
@@ -30,8 +29,8 @@ const PrototypeView = () => {
       try {
         setLoading(true);
         
-        const { data, error } = await supabase
-          .from('prototypes')
+        const { data, error } = await (supabase
+          .from('prototypes') as any)
           .select('*')
           .eq('id', id)
           .single();

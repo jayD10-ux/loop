@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { X, Upload, AlertCircle } from "lucide-react";
@@ -107,8 +106,8 @@ export function AddPrototypeModal({ open, onClose, onSuccess }: AddPrototypeModa
       }
       
       // Save to Supabase using untyped syntax
-      const { error: dbError } = await supabase
-        .from('prototypes')
+      const { error: dbError } = await (supabase
+        .from('prototypes') as any)
         .insert({
           name,
           description: description || null,
