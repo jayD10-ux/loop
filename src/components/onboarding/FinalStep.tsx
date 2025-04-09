@@ -2,6 +2,7 @@
 import React, { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Upload } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface FinalStepProps {
   onAddPrototype: () => void;
@@ -11,6 +12,15 @@ interface FinalStepProps {
 export function FinalStep({ onAddPrototype, onGoDashboard }: FinalStepProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const checkRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+
+  const handleGoDashboard = () => {
+    // Call the provided callback
+    onGoDashboard();
+    
+    // Ensure navigation to the dashboard
+    navigate('/');
+  };
 
   return (
     <div 
@@ -36,7 +46,7 @@ export function FinalStep({ onAddPrototype, onGoDashboard }: FinalStepProps) {
           <Upload className="mr-2 h-4 w-4" />
           Add Prototype Now
         </Button>
-        <Button onClick={onGoDashboard} variant="outline" className="w-full transition-transform hover:scale-105">
+        <Button onClick={handleGoDashboard} variant="outline" className="w-full transition-transform hover:scale-105">
           Go to Dashboard
         </Button>
       </div>
