@@ -24,10 +24,8 @@ export function EmptyState({ isTeam = false, teamName = "team", onAddPrototype }
           : "Get started by adding your first prototype to your workspace."}
       </p>
       <div className="flex gap-4">
-        <Button asChild>
-          <Link to="/add-prototype">
-            Create New Prototype
-          </Link>
+        <Button onClick={onAddPrototype}>
+          Create New Prototype
         </Button>
         <Button variant="outline" onClick={onAddPrototype}>
           Upload ZIP

@@ -72,6 +72,39 @@ export type Database = {
         }
         Relationships: []
       }
+      prototypes: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          files: Json
+          id: string
+          name: string
+          tech_stack: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          files: Json
+          id?: string
+          name: string
+          tech_stack: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          files?: Json
+          id?: string
+          name?: string
+          tech_stack?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       team_invites: {
         Row: {
           created_at: string

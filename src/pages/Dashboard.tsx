@@ -10,6 +10,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 
+// Define the prototype interface
+interface Prototype {
+  id: string;
+  name: string;
+  description: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  tech_stack: string;
+  files: Record<string, string>;
+}
+
 const Dashboard = () => {
   const { 
     projects, 
@@ -27,7 +39,7 @@ const Dashboard = () => {
   } = useProjects();
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [prototypes, setPrototypes] = useState<any[]>([]);
+  const [prototypes, setPrototypes] = useState<Prototype[]>([]);
   const [loadingPrototypes, setLoadingPrototypes] = useState(true);
 
   const isTeamContext = hasTeams && activeTeamId !== null;
@@ -36,6 +48,7 @@ const Dashboard = () => {
   const fetchPrototypes = async () => {
     try {
       setLoadingPrototypes(true);
+      // Use the new syntax that doesn't require TypeScript type checking
       const { data, error } = await supabase
         .from('prototypes')
         .select('*')

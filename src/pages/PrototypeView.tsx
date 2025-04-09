@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,10 +7,21 @@ import { ArrowLeft, Share2, Download, MessageSquare } from "lucide-react";
 import { Sandpack } from "@codesandbox/sandpack-react";
 import "@codesandbox/sandpack-react/dist/index.css";
 
+interface Prototype {
+  id: string;
+  name: string;
+  description: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  tech_stack: string;
+  files: Record<string, string>;
+}
+
 const PrototypeView = () => {
   const { id = "" } = useParams();
   const navigate = useNavigate();
-  const [prototype, setPrototype] = useState<any>(null);
+  const [prototype, setPrototype] = useState<Prototype | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,7 +44,7 @@ const PrototypeView = () => {
           throw new Error("Prototype not found");
         }
         
-        setPrototype(data);
+        setPrototype(data as Prototype);
       } catch (err: any) {
         console.error("Error fetching prototype:", err);
         setError(err.message || "Failed to load prototype");
@@ -74,10 +84,8 @@ const PrototypeView = () => {
     );
   }
 
-  // Convert Supabase files object to Sandpack format
-  const sandpackFiles = Object.entries(prototype.files).reduce(
+  const sandpackFiles = prototype ? Object.entries(prototype.files).reduce(
     (acc, [path, content]) => {
-      // Remove leading slash for Sandpack
       const sandpackPath = path.startsWith('/') ? path.substring(1) : path;
       return {
         ...acc,
@@ -85,7 +93,7 @@ const PrototypeView = () => {
       };
     },
     {}
-  );
+  ) : {};
 
   return (
     <div className="min-h-screen flex flex-col w-full">

@@ -42,76 +42,81 @@ export function useProjects() {
     });
   }, []);
   
-  useEffect(() => {
+  const fetchData = async () => {
     if (!userId) return;
     
-    async function fetchData() {
-      setLoading(true);
-      try {
-        // 1. Fetch team memberships if user has teams
-        const { data: teamMemberships, error: teamMembershipsError } = await supabase
-          .from('team_members')
-          .select('team_id')
-          .eq('user_id', userId);
-          
-        if (teamMembershipsError) {
-          throw new Error(`Failed to fetch team memberships: ${teamMembershipsError.message}`);
-        }
+    setLoading(true);
+    try {
+      // 1. Fetch team memberships if user has teams
+      const { data: teamMemberships, error: teamMembershipsError } = await supabase
+        .from('team_members')
+        .select('team_id')
+        .eq('user_id', userId);
         
-        // 2. Get team details if user belongs to any teams
-        const teamIds = teamMemberships?.map(tm => tm.team_id) || [];
-        let userTeams: Team[] = [];
-        
-        if (teamIds.length > 0) {
-          const { data: teamsData, error: teamsError } = await supabase
-            .from('teams')
-            .select('*')
-            .in('id', teamIds);
-            
-          if (teamsError) {
-            throw new Error(`Failed to fetch teams: ${teamsError.message}`);
-          }
-          
-          userTeams = teamsData || [];
-          
-          // Set active team to first team if not already set
-          if (userTeams.length > 0 && !activeTeamId) {
-            setActiveTeamId(userTeams[0].id);
-          }
-        }
-        
-        setTeams(userTeams);
-        
-        // 3. Fetch projects - both owned by user and by teams user belongs to
-        const { data: projectsData, error: projectsError } = await supabase
-          .from('projects')
-          .select('*');
-          
-        if (projectsError) {
-          throw new Error(`Failed to fetch projects: ${projectsError.message}`);
-        }
-        
-        // With RLS, we'll only get back the projects the user has access to
-        setProjects(
-          (projectsData || []).map(p => ({
-            ...p,
-            owner_type: p.owner_type as 'user' | 'team'
-          }))
-        );
-      } catch (error) {
-        console.error("Error fetching dashboard data:", error);
-        toast({
-          title: "Failed to load data",
-          description: error instanceof Error ? error.message : "An unexpected error occurred",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
+      if (teamMembershipsError) {
+        throw new Error(`Failed to fetch team memberships: ${teamMembershipsError.message}`);
       }
+      
+      // 2. Get team details if user belongs to any teams
+      const teamIds = teamMemberships?.map(tm => tm.team_id) || [];
+      let userTeams: Team[] = [];
+      
+      if (teamIds.length > 0) {
+        const { data: teamsData, error: teamsError } = await supabase
+          .from('teams')
+          .select('*')
+          .in('id', teamIds);
+          
+        if (teamsError) {
+          throw new Error(`Failed to fetch teams: ${teamsError.message}`);
+        }
+        
+        userTeams = teamsData || [];
+        
+        // Set active team to first team if not already set
+        if (userTeams.length > 0 && !activeTeamId) {
+          setActiveTeamId(userTeams[0].id);
+        }
+      }
+      
+      setTeams(userTeams);
+      
+      // 3. Fetch projects - both owned by user and by teams user belongs to
+      const { data: projectsData, error: projectsError } = await supabase
+        .from('projects')
+        .select('*');
+        
+      if (projectsError) {
+        throw new Error(`Failed to fetch projects: ${projectsError.message}`);
+      }
+      
+      // With RLS, we'll only get back the projects the user has access to
+      setProjects(
+        (projectsData || []).map(p => ({
+          ...p,
+          owner_type: p.owner_type as 'user' | 'team'
+        }))
+      );
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+      toast({
+        title: "Failed to load data",
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
-    
+  };
+  
+  useEffect(() => {
     fetchData();
   }, [userId, activeTeamId]);
+  
+  // Add refreshProjects function to manually trigger data refresh
+  const refreshProjects = () => {
+    fetchData();
+  };
   
   // Get filtered and sorted projects
   const filteredProjects = projects
@@ -149,5 +154,6 @@ export function useProjects() {
     setSearchQuery,
     hasTeams: teams.length > 0,
     activeTeam: teams.find(team => team.id === activeTeamId),
+    refreshProjects,
   };
 }

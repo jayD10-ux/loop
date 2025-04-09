@@ -106,7 +106,7 @@ export function AddPrototypeModal({ open, onClose, onSuccess }: AddPrototypeModa
         throw new Error("You must be logged in to add a prototype.");
       }
       
-      // Save to Supabase
+      // Save to Supabase using untyped syntax
       const { error: dbError } = await supabase
         .from('prototypes')
         .insert({
