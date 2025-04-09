@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { Share2, Download, MessageSquare } from "lucide-react";
 import { PrototypeViewer } from "@/components/prototype/PrototypeViewer";
@@ -58,7 +57,6 @@ const PrototypeView = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col w-full">
-        <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
         </main>
@@ -69,7 +67,6 @@ const PrototypeView = () => {
   if (error || !prototype) {
     return (
       <div className="min-h-screen flex flex-col w-full">
-        <Header />
         <main className="flex-1 p-6">
           <div className="flex flex-col items-center justify-center h-full">
             <h2 className="text-2xl font-bold mb-4">Error</h2>
@@ -85,7 +82,6 @@ const PrototypeView = () => {
 
   return (
     <div className="min-h-screen flex flex-col w-full">
-      <Header />
       <div className="bg-muted/30 border-b">
         <div className="container py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">

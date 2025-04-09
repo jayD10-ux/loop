@@ -125,7 +125,7 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
         );
       case 'code':
         return (
-          <div className="h-full">
+          <div className="h-full w-full">
             <Sandpack
               template={prototype.tech_stack as "react" | "vanilla"}
               files={sandpackFiles}
@@ -135,8 +135,12 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
                 showLineNumbers: true,
                 showInlineErrors: true,
                 editorHeight: '100%',
-                editorWidthPercentage: 40,
+                editorWidthPercentage: 100,
               }}
+              customSetup={{
+                entry: Object.keys(sandpackFiles)[0] || "index.js"
+              }}
+              theme="dark"
             />
           </div>
         );
