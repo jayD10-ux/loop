@@ -19,7 +19,7 @@ export function FinalStep({ onAddPrototype, onGoDashboard }: FinalStepProps) {
     onGoDashboard();
     
     // Navigate directly to the dashboard page
-    navigate('/dashboard');
+    navigate('/dashboard', { replace: true });
   };
 
   return (

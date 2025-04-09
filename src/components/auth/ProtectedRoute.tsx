@@ -91,5 +91,10 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     return <Navigate to="/onboarding" replace />;
   }
   
+  // If we're at the onboarding path but user has already completed onboarding, redirect to dashboard
+  if (hasCompletedOnboarding === true && location.pathname === "/onboarding") {
+    return <Navigate to="/dashboard" replace />;
+  }
+  
   return <>{children}</>;
 }
