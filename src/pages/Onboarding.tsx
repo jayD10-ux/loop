@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { OnboardingLayout } from "@/components/onboarding/OnboardingLayout";
@@ -255,10 +254,8 @@ async function finalizeOnboarding(
     
     let teamId: string | undefined;
     
-    // Create team if account type is team
     if (accountType === 'team' && teamName) {
       try {
-        // Use RPC to bypass RLS policies completely
         const { data, error } = await supabase.rpc('create_team', {
           team_name: teamName.trim(),
           owner_id: userId
@@ -275,7 +272,6 @@ async function finalizeOnboarding(
         teamId = data;
         console.log('Created team with ID:', teamId);
         
-        // Add user as team member using RPC
         const { error: memberError } = await supabase.rpc('add_team_member', {
           team_id: teamId,
           member_id: userId,
@@ -292,7 +288,6 @@ async function finalizeOnboarding(
         
         console.log('Added user to team as owner');
         
-        // Process team invites if any
         if (teamInvites && teamInvites.length > 0) {
           for (const email of teamInvites) {
             const { error: inviteError } = await supabase.rpc('create_team_invite', {
@@ -303,7 +298,6 @@ async function finalizeOnboarding(
             
             if (inviteError) {
               console.error(`Error inviting ${email}:`, inviteError);
-              // Continue even if invites fail, as they are not critical
             } else {
               console.log(`Invited ${email} to team`);
             }
@@ -318,7 +312,6 @@ async function finalizeOnboarding(
       }
     }
     
-    // Create project using RPC
     try {
       const ownerType = teamId ? 'team' : 'user';
       const ownerId = teamId || userId;
@@ -347,13 +340,11 @@ async function finalizeOnboarding(
       };
     }
     
-    // Update user profile to mark onboarding as completed using RPC
-    // This is the critical part where we need to match the parameter names with the SQL function
     try {
       const { data: profileResult, error: profileError } = await supabase.rpc('complete_onboarding', {
-        _user_id: userId,  // Using _user_id to match the parameter name in SQL function
-        _account_type: accountType  // Using _account_type to match the parameter name in SQL function
-      });
+        user_id: userId,
+        account_type: accountType
+      } as any);
       
       if (profileError) {
         console.error('Profile update error:', profileError);
@@ -371,11 +362,11 @@ async function finalizeOnboarding(
         };
       }
 
-      if (!profileResult.success) {
+      if (!(profileResult as any).success) {
         console.error('Profile update failed:', profileResult);
         return {
           success: false,
-          error: profileResult.error || 'Failed to update profile'
+          error: (profileResult as any).error || 'Failed to update profile'
         };
       }
     } catch (error) {
