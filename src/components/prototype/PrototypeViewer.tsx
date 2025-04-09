@@ -115,11 +115,13 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
     switch (activeTab) {
       case 'preview':
         return (
-          <div className={`device-container device-${activeDevice}`}>
+          <div className="w-full h-full">
             <iframe 
               src={prototype.previewUrl || "https://placehold.co/1200x900/3B82F6/FFFFFF?text=Interactive+Prototype"}
-              className="preview-frame"
+              className="w-full h-full border-none"
               title="Preview"
+              allow="accelerometer; camera; encrypted-media; geolocation; gyroscope; microphone; midi; payment; usb; xr-spatial-tracking"
+              sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
             />
           </div>
         );
@@ -135,7 +137,7 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
                 showLineNumbers: true,
                 showInlineErrors: true,
                 editorHeight: '100%',
-                editorWidthPercentage: 100,
+                editorWidthPercentage: 100, // Make editor take full width
               }}
               customSetup={{
                 entry: Object.keys(sandpackFiles)[0] || "index.js"
@@ -146,10 +148,10 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
         );
       case 'design':
         return (
-          <div className="device-container">
+          <div className="w-full h-full">
             <iframe 
               src={prototype.figmaUrl || "https://placehold.co/1200x900/EC4899/FFFFFF?text=Figma+Design"}
-              className="preview-frame"
+              className="w-full h-full border-none"
               title="Figma Design"
             />
           </div>
@@ -220,13 +222,32 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
 
           <div className="flex-1" />
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={toggleControlsVisibility}
-          >
-            {controlsVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {}}
+              title="Share"
+            >
+              <Share2 className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {}}
+              title="Download"
+            >
+              <Download className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleControlsVisibility}
+              title={controlsVisible ? "Hide Controls" : "Show Controls"}
+            >
+              {controlsVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </Button>
+          </div>
         </div>
       </div>
 

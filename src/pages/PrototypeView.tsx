@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Share2, Download, MessageSquare } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 import { PrototypeViewer } from "@/components/prototype/PrototypeViewer";
 
 interface Prototype {
@@ -83,7 +83,7 @@ const PrototypeView = () => {
   return (
     <div className="min-h-screen flex flex-col w-full">
       <div className="bg-muted/30 border-b">
-        <div className="container py-4 flex items-center justify-between">
+        <div className="container py-4 flex items-center">
           <div className="flex items-center gap-4">
             <div>
               <h1 className="text-xl font-semibold">{prototype.name}</h1>
@@ -91,14 +91,6 @@ const PrototypeView = () => {
                 {new Date(prototype.created_at).toLocaleDateString()} • {prototype.tech_stack}
               </p>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
-              <Share2 className="h-4 w-4 mr-1" /> Share
-            </Button>
-            <Button variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-1" /> Download
-            </Button>
           </div>
         </div>
       </div>
