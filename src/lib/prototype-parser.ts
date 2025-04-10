@@ -1,3 +1,4 @@
+
 import JSZip from 'jszip';
 
 export type TechStack = 'react' | 'vanilla';
@@ -102,6 +103,37 @@ export async function parseZipFile(file: File): Promise<ParsedPrototype> {
       };
     }
     
+    // Fix any JavaScript files that might cause issues in Sandpack
+    Object.keys(files).forEach(filePath => {
+      if (filePath.endsWith('.js') || filePath.endsWith('.jsx')) {
+        // Replace problematic document.querySelector calls with safer checks
+        let content = files[filePath];
+        content = content.replace(
+          /document\.querySelector\((['"])([^'"]+)\1\)/g,
+          'document.querySelector($1$2$1) || { innerHTML: "" }'
+        );
+        content = content.replace(
+          /document\.getElementById\((['"])([^'"]+)\1\)/g,
+          'document.getElementById($1$2$1) || document.createElement("div")'
+        );
+        
+        // Add a DOMContentLoaded listener to ensure DOM is ready
+        if (content.includes('document.') && !content.includes('DOMContentLoaded')) {
+          content = `
+// Ensure DOM is ready before accessing elements
+document.addEventListener('DOMContentLoaded', function() {
+  try {
+    ${content}
+  } catch (error) {
+    console.error('Error executing script:', error);
+  }
+});`;
+        }
+        
+        files[filePath] = content;
+      }
+    });
+    
     // If no index.html found, create a default one to display all files
     if (!hasIndexHtml) {
       const fileKeys = Object.keys(files);
@@ -128,13 +160,15 @@ export async function parseZipFile(file: File): Promise<ParsedPrototype> {
 <html>
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Project Files</title>
   <style>
     body { font-family: system-ui, -apple-system, sans-serif; line-height: 1.6; padding: 1rem; }
-    .container { display: flex; max-width: 1200px; margin: 0 auto; gap: 2rem; }
+    .container { display: flex; flex-direction: column; max-width: 1200px; margin: 0 auto; gap: 2rem; }
+    @media (min-width: 768px) { .container { flex-direction: row; } }
     .file-list { flex: 1; }
     .file-content { flex: 2; }
-    pre { background: #f5f5f5; padding: 1rem; border-radius: 4px; overflow: auto; }
+    pre { background: #f5f5f5; padding: 1rem; border-radius: 4px; overflow: auto; max-height: 400px; }
   </style>
 </head>
 <body>
@@ -153,19 +187,30 @@ export async function parseZipFile(file: File): Promise<ParsedPrototype> {
   </div>
 
   <script>
+    // Safely execute the script
     function displayFileContent(filePath) {
-      const content = ${JSON.stringify(files)};
-      const fileNameEl = document.getElementById('file-name');
-      const fileContentEl = document.getElementById('file-content');
-      
-      if (fileNameEl && fileContentEl && content[filePath]) {
-        fileNameEl.textContent = filePath.split('/').pop();
-        fileContentEl.textContent = content[filePath];
+      try {
+        const content = ${JSON.stringify(files)};
+        const fileNameEl = document.getElementById('file-name');
+        const fileContentEl = document.getElementById('file-content');
+        
+        if (fileNameEl && fileContentEl && content[filePath]) {
+          fileNameEl.textContent = filePath.split('/').pop();
+          fileContentEl.textContent = content[filePath];
+        }
+      } catch (error) {
+        console.error('Error displaying file content:', error);
       }
     }
     
-    // Initialize with the first file
-    displayFileContent('${sampleFile}');
+    // Initialize with the first file when DOM is ready
+    document.addEventListener('DOMContentLoaded', function() {
+      try {
+        displayFileContent('${sampleFile}');
+      } catch (error) {
+        console.error('Error initializing file display:', error);
+      }
+    });
   </script>
 </body>
 </html>`;
@@ -187,6 +232,11 @@ export async function parseZipFile(file: File): Promise<ParsedPrototype> {
       files: { 
         '/index.html': 
         `<html>
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>Error Processing ZIP</title>
+          </head>
           <body>
             <h1>Error Processing ZIP</h1>
             <p>${err.message || "Unknown error occurred while processing the ZIP file."}</p>
@@ -227,7 +277,7 @@ export function injectTailwindCDN(files: Record<string, string>): Record<string,
       const position = htmlStartTag.index! + htmlStartTag[0].length;
       const newHtml = 
         htmlContent.substring(0, position) + 
-        `\n<head>\n  ${tailwindCDN}\n</head>\n` + 
+        `\n<head>\n  <meta charset="utf-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1">\n  ${tailwindCDN}\n</head>\n` + 
         htmlContent.substring(position);
       return {
         ...files,

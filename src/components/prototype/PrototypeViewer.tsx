@@ -1,4 +1,5 @@
-import { useState, useRef } from "react";
+
+import { useState, useRef, useEffect } from "react";
 import { 
   Tabs, 
   TabsList, 
@@ -9,22 +10,20 @@ import { Button } from "@/components/ui/button";
 import { 
   ArrowLeft,
   Monitor, 
-  Smartphone, 
-  Tablet, 
   Eye,
   EyeOff,
   Code,
-  Pen
+  Pen,
+  Share2, 
+  Download
 } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { FeedbackMarker } from "./FeedbackMarker";
 import { CommentThread } from "./CommentThread";
 import { useNavigate } from "react-router-dom";
-import { Share2, Download } from "lucide-react";
 import { Sandpack } from "@codesandbox/sandpack-react";
 import { PreviewWindow } from "./PreviewWindow";
+import { DevicePreviewControls } from "./DevicePreviewControls";
+import { cn } from "@/lib/utils";
 
 interface PrototypeViewerProps {
   prototype: {
@@ -105,15 +104,9 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
   const sandpackFiles = Object.entries(prototype.files || {}).reduce(
     (acc, [path, content]) => {
       const sandpackPath = path.startsWith('/') ? path.substring(1) : path;
-      // Fix optional chaining in JavaScript files that might cause issues
-      let processedContent = content as string;
-      if (path.endsWith('.js')) {
-        // Replace optional chaining with a safer alternative
-        processedContent = processedContent.replace(/(\w+)\?\.([\w\d_$]+)/g, '$1 && $1.$2');
-      }
       return {
         ...acc,
-        [sandpackPath]: { code: processedContent },
+        [sandpackPath]: { code: content as string },
       };
     },
     {}
@@ -130,28 +123,25 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
     Object.keys(sandpackFiles)[0] ||
     "index.html";
 
-  // Error display component for preview issues
-  const ErrorDisplay = () => (
-    <div className="w-full h-full p-4 bg-white overflow-auto">
-      <h2 className="text-xl font-semibold mb-4 text-red-500">Preview Error</h2>
-      <p className="text-muted-foreground mb-4">
-        There was an error displaying the preview. This may be due to incompatible code or missing dependencies.
-      </p>
-      <div className="mt-4">
-        <h3 className="text-md font-medium mb-2">Troubleshooting:</h3>
-        <ul className="list-disc pl-6 space-y-2">
-          <li>Check for syntax errors in your code</li>
-          <li>Ensure all required files are included (HTML, CSS, JS)</li>
-          <li>View the code tab to examine and fix issues</li>
-        </ul>
-      </div>
-    </div>
-  );
+  // Device preview class based on active device
+  const getDevicePreviewClass = () => {
+    switch (activeDevice) {
+      case "mobile":
+        return "max-w-[375px] mx-auto h-full border border-gray-200 rounded-lg overflow-hidden shadow-sm";
+      case "tablet":
+        return "max-w-[768px] mx-auto h-full border border-gray-200 rounded-lg overflow-hidden shadow-sm";
+      default:
+        return "w-full h-full";
+    }
+  };
 
   return (
     <div className="h-screen flex flex-col bg-background">
       <div 
-        className={`${controlsVisible ? '' : 'opacity-0 pointer-events-none'} preview-controls transition-opacity duration-300 p-2 bg-white border-b z-10`}
+        className={cn(
+          "preview-controls transition-opacity duration-300 p-2 bg-white border-b z-10",
+          controlsVisible ? "" : "opacity-0 pointer-events-none"
+        )}
         ref={controlsRef}
       >
         <div className="flex items-center gap-2">
@@ -173,6 +163,13 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
               </TabsTrigger>
             </TabsList>
           </Tabs>
+
+          {activeTab === "preview" && (
+            <DevicePreviewControls 
+              activeDevice={activeDevice}
+              onDeviceChange={handleDeviceChange}
+            />
+          )}
 
           <Button
             variant="ghost"
@@ -203,47 +200,63 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
 
       <div className="flex-1 relative">
         {activeTab === 'preview' && (
-          <div className="w-full h-full absolute inset-0 m-0 p-0" ref={previewRef}>
-            {prototype.deployment_url || prototype.deployment_status ? (
-              <PreviewWindow
-                prototypeId={prototype.id}
-                deploymentStatus={prototype.deployment_status}
-                deploymentUrl={prototype.deployment_url}
-              />
-            ) : hasSandpackFiles ? (
-              <Sandpack
-                template="vanilla"
-                files={sandpackFiles}
-                options={{
-                  showNavigator: false,
-                  showTabs: false,
-                  showLineNumbers: false,
-                  showInlineErrors: true,
-                  editorHeight: '0',
-                  editorWidthPercentage: 0,
-                  visibleFiles: [],
-                  recompileMode: "immediate",
-                  recompileDelay: 300,
-                  autorun: true,
-                  classes: {
-                    'sp-preview': 'preview-only-mode w-full h-full m-0 p-0',
-                    'sp-layout': 'preview-only-layout w-full h-full m-0 p-0',
-                    'sp-stack': 'preview-only-stack w-full h-full m-0 p-0',
-                    'sp-wrapper': 'preview-only-wrapper w-full h-full m-0 p-0',
-                    'sp-preview-container': 'w-full h-full border-none m-0 p-0',
-                    'sp-preview-iframe': 'w-full h-full border-none m-0 p-0'
-                  }
-                }}
-                customSetup={{
-                  entry: entryFile,
-                  // Only include minimal dependencies needed for vanilla projects
-                  dependencies: {}
-                }}
-                theme="light"
-              />
-            ) : (
-              <ErrorDisplay />
-            )}
+          <div className="w-full h-full absolute inset-0 m-0 p-4 bg-gray-50 overflow-auto" ref={previewRef}>
+            <div className={getDevicePreviewClass()}>
+              {prototype.deployment_url || prototype.deployment_status ? (
+                <PreviewWindow
+                  prototypeId={prototype.id}
+                  deploymentStatus={prototype.deployment_status}
+                  deploymentUrl={prototype.deployment_url}
+                  files={prototype.files}
+                />
+              ) : hasSandpackFiles ? (
+                <Sandpack
+                  template="vanilla"
+                  files={sandpackFiles}
+                  options={{
+                    showNavigator: false,
+                    showTabs: false,
+                    showLineNumbers: false,
+                    showInlineErrors: true,
+                    editorHeight: '0',
+                    editorWidthPercentage: 0,
+                    visibleFiles: [],
+                    recompileMode: "immediate",
+                    recompileDelay: 300,
+                    autorun: true,
+                    classes: {
+                      'sp-preview': 'preview-only-mode w-full h-full m-0 p-0',
+                      'sp-layout': 'preview-only-layout w-full h-full m-0 p-0',
+                      'sp-stack': 'preview-only-stack w-full h-full m-0 p-0',
+                      'sp-wrapper': 'preview-only-wrapper w-full h-full m-0 p-0',
+                      'sp-preview-container': 'w-full h-full border-none m-0 p-0',
+                      'sp-preview-iframe': 'w-full h-full border-none m-0 p-0'
+                    }
+                  }}
+                  customSetup={{
+                    entry: entryFile,
+                    // Only include minimal dependencies needed for vanilla projects
+                    dependencies: {}
+                  }}
+                  theme="light"
+                />
+              ) : (
+                <div className="w-full h-full p-4 bg-white overflow-auto">
+                  <h2 className="text-xl font-semibold mb-4 text-red-500">Preview Error</h2>
+                  <p className="text-muted-foreground mb-4">
+                    There was an error displaying the preview. This may be due to incompatible code or missing dependencies.
+                  </p>
+                  <div className="mt-4">
+                    <h3 className="text-md font-medium mb-2">Troubleshooting:</h3>
+                    <ul className="list-disc pl-6 space-y-2">
+                      <li>Check for syntax errors in your code</li>
+                      <li>Ensure all required files are included (HTML, CSS, JS)</li>
+                      <li>View the code tab to examine and fix issues</li>
+                    </ul>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
         
