@@ -1,4 +1,3 @@
-
 import { useState, useRef } from "react";
 import { 
   Tabs, 
@@ -143,18 +142,16 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
   return (
     <div className="h-screen flex flex-col bg-background">
       <div 
-        className={`${controlsVisible ? '' : 'opacity-0 pointer-events-none'} preview-controls transition-opacity duration-300`}
+        className={`${controlsVisible ? '' : 'opacity-0 pointer-events-none'} preview-controls transition-opacity duration-300 p-2 bg-white border-b z-10`}
         ref={controlsRef}
       >
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" onClick={handleBack}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
+            <ArrowLeft className="h-4 w-4 mr-1" />
             Back
           </Button>
           
-          <Separator orientation="vertical" className="h-6" />
-          
-          <Tabs value={activeTab} onValueChange={handleTabChange} className="flex items-center">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="flex-1">
             <TabsList className="h-9">
               <TabsTrigger value="preview">
                 <Monitor className="h-4 w-4 mr-2" /> Preview
@@ -168,77 +165,36 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
             </TabsList>
           </Tabs>
 
-          <Separator orientation="vertical" className="h-6" />
-
-          <div className="flex items-center gap-2 bg-muted/20 rounded-md p-1">
-            <Button 
-              variant={activeDevice === "desktop" ? "secondary" : "ghost"} 
-              size="sm"
-              onClick={() => handleDeviceChange("desktop")}
-            >
-              <Monitor className="h-4 w-4" />
-            </Button>
-            <Button 
-              variant={activeDevice === "tablet" ? "secondary" : "ghost"}
-              size="sm" 
-              onClick={() => handleDeviceChange("tablet")}
-            >
-              <Tablet className="h-4 w-4" />
-            </Button>
-            <Button 
-              variant={activeDevice === "mobile" ? "secondary" : "ghost"}
-              size="sm"
-              onClick={() => handleDeviceChange("mobile")}
-            >
-              <Smartphone className="h-4 w-4" />
-            </Button>
-          </div>
-
-          <Separator orientation="vertical" className="h-6" />
-
-          <div className="flex items-center gap-2">
-            <Switch
-              checked={feedbackMode}
-              onCheckedChange={toggleFeedbackMode}
-              id="feedback-mode"
-            />
-            <Label htmlFor="feedback-mode" className="text-sm">Feedback</Label>
-          </div>
-
-          <div className="flex-1" />
-
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {}}
-              title="Share"
-            >
-              <Share2 className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {}}
-              title="Download"
-            >
-              <Download className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={toggleControlsVisibility}
-              title={controlsVisible ? "Hide Controls" : "Show Controls"}
-            >
-              {controlsVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </Button>
-          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {}}
+            title="Share"
+          >
+            <Share2 className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {}}
+            title="Download"
+          >
+            <Download className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={toggleControlsVisibility}
+            title={controlsVisible ? "Hide Controls" : "Show Controls"}
+          >
+            {controlsVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </Button>
         </div>
       </div>
 
       <div className="flex-1 relative">
         {activeTab === 'preview' && (
-          <div className="w-full h-full" ref={previewRef}>
+          <div className="w-full h-full absolute inset-0 m-0 p-0" ref={previewRef}>
             {hasSandpackFiles ? (
               <Sandpack
                 template={prototype.tech_stack as "react" | "vanilla"}
@@ -255,10 +211,10 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
                   recompileDelay: 300,
                   autorun: true,
                   classes: {
-                    'sp-preview': 'preview-only-mode',
-                    'sp-layout': 'preview-only-layout',
-                    'sp-stack': 'preview-only-stack',
-                    'sp-wrapper': 'preview-only-wrapper',
+                    'sp-preview': 'preview-only-mode w-full h-full m-0 p-0',
+                    'sp-layout': 'preview-only-layout w-full h-full m-0 p-0',
+                    'sp-stack': 'preview-only-stack w-full h-full m-0 p-0',
+                    'sp-wrapper': 'preview-only-wrapper w-full h-full m-0 p-0',
                   }
                 }}
                 customSetup={{
@@ -298,10 +254,10 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
         )}
         
         {activeTab === 'design' && (
-          <div className="w-full h-full">
+          <div className="w-full h-full absolute inset-0 m-0 p-0">
             <iframe 
               src={prototype.figmaUrl || "https://placehold.co/1200x900/EC4899/FFFFFF?text=Figma+Design"}
-              className="w-full h-full border-none"
+              className="w-full h-full border-none m-0 p-0"
               title="Figma Design"
             />
           </div>
