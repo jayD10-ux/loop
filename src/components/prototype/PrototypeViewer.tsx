@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { 
   Tabs, 
   TabsList, 
@@ -111,69 +111,163 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
     {}
   );
 
+  useEffect(() => {
+    console.log("%c===== PROTOTYPE VIEWER DEBUG =====", "background: #222; color: #bada55; font-size: 16px;");
+    console.log("Prototype tech_stack:", prototype.tech_stack);
+    console.log("Prototype files structure:", prototype.files);
+    
+    // Detailed file inspection
+    if (prototype.files) {
+      console.log("Number of files:", Object.keys(prototype.files).length);
+      Object.entries(prototype.files).forEach(([filename, fileContent]) => {
+        console.log(`File: ${filename}`, {
+          type: typeof fileContent,
+          isString: typeof fileContent === 'string',
+          isObject: typeof fileContent === 'object' && fileContent !== null,
+          hasCodeProp: typeof fileContent === 'object' && fileContent !== null && 
+                       fileContent && 'code' in fileContent,
+          preview: typeof fileContent === 'string' 
+                    ? fileContent.substring(0, 100) + '...' 
+                    : '[Not a string]'
+        });
+      });
+    }
+    
+    // Sandbox file preparation debug
+    console.log("Sandpack files after transformation:", sandpackFiles);
+    console.log("Sandpack files keys:", Object.keys(sandpackFiles));
+    console.log("%c================================", "background: #222; color: #bada55; font-size: 16px;");
+  }, [prototype, sandpackFiles]);
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'preview':
-        // For debugging, let's log the available files
-        console.log("Available files:", Object.keys(sandpackFiles));
+        // Enhanced debugging for preview rendering
+        console.log("%c===== PREVIEW TAB RENDERING =====", "background: #222; color: #bada55; font-size: 16px;");
         
-        // Let's determine a proper entry point or fallback to a simple HTML renderer
-        const hasIndexHtml = sandpackFiles["index.html"] !== undefined;
-        const hasIndexJs = sandpackFiles["index.js"] !== undefined || sandpackFiles["src/index.js"] !== undefined;
+        // Let's determine a proper entry point
+        const availableFiles = Object.keys(sandpackFiles);
+        console.log("Available files for entry point detection:", availableFiles);
         
-        if (!hasIndexHtml && !hasIndexJs) {
-          // If no proper entry files, create a simple HTML display with file contents
-          return (
-            <div className="w-full h-full p-4 bg-white overflow-auto">
-              <h2 className="text-xl font-semibold mb-4">Prototype Preview</h2>
-              <p className="text-muted-foreground mb-4">Showing content of prototype files:</p>
-              {Object.entries(sandpackFiles).map(([filename, fileContent]) => (
-                <div key={filename} className="mb-6">
-                  <h3 className="text-md font-medium mb-2">{filename}</h3>
-                  <pre className="p-3 bg-gray-100 rounded overflow-auto text-sm">
-                    {typeof fileContent === 'object' && fileContent !== null && 'code' in fileContent 
-                      ? (fileContent as {code: string}).code 
-                      : String(fileContent)}
-                  </pre>
-                </div>
-              ))}
+        const entryPointDetection = {
+          hasIndexHtml: availableFiles.includes("index.html"),
+          hasIndexJs: availableFiles.includes("index.js"),
+          hasSrcIndexJs: availableFiles.includes("src/index.js")
+        };
+        
+        console.log("Entry point detection:", entryPointDetection);
+        
+        const detectedEntry = entryPointDetection.hasIndexHtml ? "index.html" : (
+          entryPointDetection.hasIndexJs ? "index.js" : (
+            entryPointDetection.hasSrcIndexJs ? "src/index.js" : availableFiles[0] || "index.js"
+          )
+        );
+        
+        console.log("Selected entry point:", detectedEntry);
+        console.log("Template being used:", prototype.tech_stack);
+        console.log("%c================================", "background: #222; color: #bada55; font-size: 16px;");
+        
+        // Create a component to display syntax errors with helpful guidance
+        const ErrorDisplay = () => (
+          <div className="w-full h-full p-4 bg-white overflow-auto">
+            <h2 className="text-xl font-semibold mb-4 text-red-500">Prototype Preview Error</h2>
+            <p className="text-muted-foreground mb-4">
+              The prototype contains modern JavaScript syntax that can't be displayed directly.
+            </p>
+            <div className="p-4 bg-red-50 border border-red-200 rounded-md mb-4">
+              <p className="font-medium text-red-800">Syntax Error: Optional chaining (?.) not supported</p>
+              <p className="text-sm text-red-700 mt-2">This code uses newer JavaScript features that require a modern browser.</p>
             </div>
-          );
-        }
-        
-        return (
-          <div className="w-full h-full sandpack-preview-container">
-            <Sandpack
-              template={prototype.tech_stack as "react" | "vanilla"}
-              files={sandpackFiles}
-              options={{
-                showNavigator: false,
-                showTabs: false,
-                showLineNumbers: false,
-                showInlineErrors: true, // Show errors to help debug
-                editorHeight: '0',
-                editorWidthPercentage: 0,
-                classes: {
-                  'sp-preview': 'preview-only-mode',
-                  'sp-layout': 'preview-only-layout',
-                  'sp-stack': 'preview-only-stack',
-                  'sp-wrapper': 'preview-only-wrapper',
-                }
-              }}
-              customSetup={{
-                entry: hasIndexHtml ? "index.html" : (
-                  sandpackFiles["index.js"] ? "index.js" : "src/index.js"
-                ),
-                dependencies: {
-                  // Add common dependencies that might be needed
-                  "react": "^18.0.0",
-                  "react-dom": "^18.0.0"
-                }
-              }}
-              theme="light"
-            />
+            <div className="mt-4">
+              <h3 className="text-md font-medium mb-2">What to do:</h3>
+              <ul className="list-disc pl-6 space-y-2">
+                <li>Replace <code className="bg-gray-100 px-1 rounded">?.</code> with conditional checks (e.g., <code className="bg-gray-100 px-1 rounded">if (el) el.remove()</code>)</li>
+                <li>Use older JavaScript syntax for compatibility</li>
+              </ul>
+            </div>
+            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-md">
+              <h3 className="text-md font-medium mb-2 text-blue-800">Your code:</h3>
+              <div className="bg-white p-3 rounded border border-gray-200 overflow-auto max-h-64">
+                <pre className="text-sm">
+                  {Object.entries(sandpackFiles).map(([name, content]) => {
+                    const fileContent = typeof content === 'object' && content !== null && 'code' in content 
+                      ? (content as {code: string}).code 
+                      : String(content);
+                    return `// ${name}\n${fileContent}\n\n`;
+                  }).join('')}
+                </pre>
+              </div>
+            </div>
           </div>
         );
+        
+        try {
+          // For files with modern syntax, display the custom error component directly
+          if (Object.values(prototype.files).some(content => 
+              String(content).includes('?.') || 
+              String(content).includes('??') ||
+              String(content).includes('=>') ||
+              String(content).includes('...') ||
+              String(content).includes('const ') ||
+              String(content).includes('let ')
+            )) {
+            console.log("Detected modern syntax, showing error display");
+            return <ErrorDisplay />;
+          }
+          
+          // Using properly configured Sandpack for preview
+          return (
+            <div className="w-full h-full sandpack-preview-container">
+              <Sandpack
+                template={prototype.tech_stack as "react" | "react-ts" | "vanilla" | "vanilla-ts" | "vue" | "angular" | "svelte" | "nextjs"}
+                files={sandpackFiles}
+                options={{
+                  showNavigator: false,
+                  showTabs: false,
+                  showLineNumbers: false,
+                  showInlineErrors: true,
+                  editorHeight: '0',
+                  editorWidthPercentage: 0,
+                  visibleFiles: [],
+                  recompileMode: "immediate",
+                  recompileDelay: 300,
+                  autorun: true,
+                  bundlerURL: "https://sandpack-bundler-n8ck.fly.dev",
+                  externalResources: [
+                    // Add any external resources your prototypes might need
+                    "https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css"
+                  ],
+                  classes: {
+                    'sp-preview': 'preview-only-mode',
+                    'sp-layout': 'preview-only-layout',
+                    'sp-stack': 'preview-only-stack',
+                    'sp-wrapper': 'preview-only-wrapper',
+                  }
+                }}
+                customSetup={{
+                  entry: detectedEntry,
+                  dependencies: {
+                    // React dependencies
+                    "react": "^18.0.0",
+                    "react-dom": "^18.0.0",
+                    
+                    // Modern JS support
+                    "@babel/runtime": "^7.13.10",
+                    "core-js": "^3.8.3",
+                    
+                    // Common libraries that might be used
+                    "lodash": "^4.17.21",
+                    "axios": "^0.21.1"
+                  }
+                }}
+                theme="light"
+              />
+            </div>
+          );
+        } catch (error) {
+          console.error("Error rendering Sandpack:", error);
+          return <ErrorDisplay />;
+        }
       case 'code':
         return (
           <div className="h-full w-full">

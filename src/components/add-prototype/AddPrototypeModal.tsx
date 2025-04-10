@@ -37,7 +37,7 @@ export function AddPrototypeModal({ open, onClose, onSuccess }: AddPrototypeModa
       'application/zip': ['.zip'],
       'application/x-zip-compressed': ['.zip']
     },
-    maxSize: 10 * 1024 * 1024, // 10MB
+    maxSize: 1024 * 1024 * 1024, // 1GB
     maxFiles: 1,
     onDrop: (acceptedFiles, rejectedFiles) => {
       setError(null);
@@ -45,7 +45,7 @@ export function AddPrototypeModal({ open, onClose, onSuccess }: AddPrototypeModa
       if (rejectedFiles.length > 0) {
         const rejection = rejectedFiles[0];
         if (rejection.errors[0].code === 'file-too-large') {
-          setError('File is too large. Maximum size is 10MB.');
+          setError('File is too large. Maximum size is 1GB.');
         } else if (rejection.errors[0].code === 'file-invalid-type') {
           setError('Only ZIP files are accepted.');
         } else {
@@ -217,7 +217,7 @@ export function AddPrototypeModal({ open, onClose, onSuccess }: AddPrototypeModa
                   Select ZIP File
                 </Button>
                 <p className="text-xs text-muted-foreground mt-4">
-                  Maximum file size: 10MB
+                  Maximum file size: 1GB
                 </p>
               </>
             )}
