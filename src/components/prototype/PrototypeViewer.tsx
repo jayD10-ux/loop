@@ -11,7 +11,6 @@ import {
   Monitor, 
   Smartphone, 
   Tablet, 
-  ExternalLink,
   Eye,
   EyeOff,
   Code,
@@ -25,6 +24,7 @@ import { CommentThread } from "./CommentThread";
 import { useNavigate } from "react-router-dom";
 import { Share2, Download } from "lucide-react";
 import { Sandpack } from "@codesandbox/sandpack-react";
+import { PreviewWindow } from "./PreviewWindow";
 
 interface PrototypeViewerProps {
   prototype: {
@@ -38,6 +38,8 @@ interface PrototypeViewerProps {
     files: Record<string, string>;
     previewUrl?: string; // Optional, fallback to placeholder
     figmaUrl?: string; // Optional, fallback to placeholder
+    deployment_status?: 'pending' | 'deployed' | 'failed';
+    deployment_url?: string;
   };
   onBack?: () => void; // Optional callback for back navigation
 }
@@ -114,12 +116,13 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
   // Check if sandpackFiles is empty
   const hasSandpackFiles = Object.keys(sandpackFiles).length > 0;
 
-  // Get entry file - prefer index.html or index.js
+  // Get entry file - prefer index.html for vanilla
   const entryFile = 
     Object.keys(sandpackFiles).find(file => file === "index.html") ||
+    Object.keys(sandpackFiles).find(file => file.endsWith(".html")) ||
     Object.keys(sandpackFiles).find(file => file === "index.js") ||
     Object.keys(sandpackFiles)[0] ||
-    "index.js";
+    "index.html";
 
   // Error display component for preview issues
   const ErrorDisplay = () => (
@@ -132,7 +135,7 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
         <h3 className="text-md font-medium mb-2">Troubleshooting:</h3>
         <ul className="list-disc pl-6 space-y-2">
           <li>Check for syntax errors in your code</li>
-          <li>Ensure all required dependencies are available</li>
+          <li>Ensure all required files are included (HTML, CSS, JS)</li>
           <li>View the code tab to examine and fix issues</li>
         </ul>
       </div>
@@ -195,9 +198,15 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
       <div className="flex-1 relative">
         {activeTab === 'preview' && (
           <div className="w-full h-full absolute inset-0 m-0 p-0" ref={previewRef}>
-            {hasSandpackFiles ? (
+            {prototype.deployment_url || prototype.deployment_status ? (
+              <PreviewWindow
+                prototypeId={prototype.id}
+                deploymentStatus={prototype.deployment_status}
+                deploymentUrl={prototype.deployment_url}
+              />
+            ) : hasSandpackFiles ? (
               <Sandpack
-                template={prototype.tech_stack as "react" | "vanilla"}
+                template="vanilla"
                 files={sandpackFiles}
                 options={{
                   showNavigator: false,
@@ -219,10 +228,8 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
                 }}
                 customSetup={{
                   entry: entryFile,
-                  dependencies: {
-                    "react": "^18.0.0",
-                    "react-dom": "^18.0.0",
-                  }
+                  // Only include minimal dependencies needed for vanilla projects
+                  dependencies: {}
                 }}
                 theme="light"
               />
@@ -235,7 +242,7 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
         {activeTab === 'code' && (
           <div className="h-full w-full">
             <Sandpack
-              template={prototype.tech_stack as "react" | "vanilla"}
+              template="vanilla"
               files={sandpackFiles}
               options={{
                 showNavigator: true,
@@ -246,7 +253,9 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
                 editorWidthPercentage: 60,
               }}
               customSetup={{
-                entry: entryFile
+                entry: entryFile,
+                // Only include minimal dependencies
+                dependencies: {}
               }}
               theme="light"
             />

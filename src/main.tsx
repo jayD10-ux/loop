@@ -11,7 +11,6 @@ if (!CLERK_PUBLISHABLE_KEY) {
 }
 
 // Import our fallback styles for Sandpack
-// Note: We're removing the problematic import and only using our custom styles
 import './styles/sandpack.css';
 
 createRoot(document.getElementById("root")!).render(

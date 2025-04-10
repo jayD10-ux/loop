@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Header } from "@/components/layout/Header";
 import { PrototypeGrid } from "@/components/dashboard/PrototypeGrid";
@@ -149,13 +148,23 @@ const Dashboard = () => {
                   : "Manage your personal prototypes"}
               </p>
             </div>
-            <Button 
-              onClick={() => setIsAddModalOpen(true)}
-              className="gap-1"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Add Prototype</span>
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button 
+                onClick={() => setIsAddModalOpen(true)}
+                className="gap-1"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Add Prototype</span>
+              </Button>
+              <Button 
+                variant="outline"
+                onClick={() => window.location.href = '/upload-prototype'} 
+                className="gap-1"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Upload HTML/ZIP</span>
+              </Button>
+            </div>
           </div>
 
           <DashboardControls

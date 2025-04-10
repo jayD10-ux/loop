@@ -1,4 +1,3 @@
-
 export interface Prototype {
   id: string;
   name: string;
@@ -8,4 +7,7 @@ export interface Prototype {
   updated_at: string;
   tech_stack: 'react' | 'vanilla' | string;
   files: Record<string, string>;
+  deployment_status?: 'pending' | 'deployed' | 'failed';
+  deployment_url?: string;
+  file_path?: string; // Path to uploaded file in storage
 }

@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,6 +8,7 @@ import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
 import AddPrototype from "./pages/AddPrototype";
 import PrototypeView from "./pages/PrototypeView";
+import PrototypeUpload from "./pages/PrototypeUpload";
 import Onboarding from "./pages/Onboarding";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -31,6 +31,7 @@ const AppRoutes = () => {
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/add-prototype" element={<ProtectedRoute><AddPrototype /></ProtectedRoute>} />
         <Route path="/prototype/:id" element={<ProtectedRoute><PrototypeView /></ProtectedRoute>} />
+        <Route path="/upload-prototype" element={<ProtectedRoute><PrototypeUpload /></ProtectedRoute>} />
         
         {/* Redirect onboarding to dashboard */}
         <Route path="/onboarding" element={<ProtectedRoute><Navigate to="/dashboard" replace /></ProtectedRoute>} />
