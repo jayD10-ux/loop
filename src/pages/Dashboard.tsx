@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Header } from "@/components/layout/Header";
 import { PrototypeGrid } from "@/components/dashboard/PrototypeGrid";
@@ -47,11 +48,11 @@ const Dashboard = () => {
   const fetchPrototypes = async () => {
     try {
       setLoadingPrototypes(true);
-      // Use the new syntax that doesn't require TypeScript type checking
-      const { data, error } = await (supabase
-        .from('prototypes') as any)
+      // Use proper type casting to avoid TypeScript errors
+      const { data, error } = await supabase
+        .from('prototypes')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false }) as any;
       
       if (error) {
         console.error('Error fetching prototypes:', error);

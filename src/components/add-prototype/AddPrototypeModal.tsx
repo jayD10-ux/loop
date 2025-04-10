@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { X, Upload, AlertCircle } from "lucide-react";
@@ -105,16 +106,16 @@ export function AddPrototypeModal({ open, onClose, onSuccess }: AddPrototypeModa
         throw new Error("You must be logged in to add a prototype.");
       }
       
-      // Save to Supabase using untyped syntax
-      const { error: dbError } = await (supabase
-        .from('prototypes') as any)
+      // Save to Supabase with proper type casting
+      const { error: dbError } = await supabase
+        .from('prototypes')
         .insert({
           name,
           description: description || null,
           created_by: session.user.id,
           tech_stack: techStack,
           files: processedFiles
-        });
+        } as any);
       
       if (dbError) {
         throw new Error(dbError.message);
