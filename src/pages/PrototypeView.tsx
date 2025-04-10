@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Header } from "@/components/layout/Header";
 import { ArrowLeft, Share2, Download } from "lucide-react";
 import { Sandpack } from "@codesandbox/sandpack-react";
-// Note: We'll use the @codesandbox/sandpack-react style by requiring it as a dependency
 
 interface Prototype {
   id: string;
@@ -85,7 +83,7 @@ const PrototypeView = () => {
     );
   }
 
-  const sandpackFiles = Object.entries(prototype.files).reduce(
+  const sandpackFiles = Object.entries(prototype?.files || {}).reduce(
     (acc, [path, content]) => {
       const sandpackPath = path.startsWith('/') ? path.substring(1) : path;
       return {
@@ -110,9 +108,9 @@ const PrototypeView = () => {
               <ArrowLeft className="h-4 w-4 mr-1" /> Back
             </Button>
             <div>
-              <h1 className="text-xl font-semibold">{prototype.name}</h1>
+              <h1 className="text-xl font-semibold">{prototype?.name}</h1>
               <p className="text-sm text-muted-foreground">
-                {new Date(prototype.created_at).toLocaleDateString()} • {prototype.tech_stack}
+                {prototype && new Date(prototype.created_at).toLocaleDateString()} • {prototype?.tech_stack}
               </p>
             </div>
           </div>
@@ -129,7 +127,7 @@ const PrototypeView = () => {
       <main className="flex-1 flex flex-col">
         <div className="flex-1 h-[calc(100vh-10rem)]">
           <Sandpack
-            template={prototype.tech_stack as "react" | "vanilla"}
+            template={prototype?.tech_stack as "react" | "vanilla"}
             files={sandpackFiles}
             options={{
               showNavigator: true,
@@ -139,6 +137,7 @@ const PrototypeView = () => {
               editorHeight: '100%',
               editorWidthPercentage: 40
             }}
+            theme="light"
           />
         </div>
       </main>

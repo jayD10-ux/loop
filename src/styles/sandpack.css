@@ -55,6 +55,42 @@
   --internal-sandpack-border-color: var(--sp-colors-border);
 }
 
+/* Editor-specific styles */
+.sp-tabs {
+  display: flex;
+  align-items: center;
+  background-color: var(--sp-colors-bg-default);
+  border-bottom: 1px solid var(--internal-sandpack-border-color);
+}
+
+.sp-tab-button {
+  padding: 0 var(--sp-space-3);
+  height: 40px;
+  display: flex;
+  align-items: center;
+  position: relative;
+  font-size: var(--sp-font-size);
+  font-family: var(--sp-font-body);
+  color: var(--sp-colors-fg-inactive);
+  cursor: pointer;
+  border-bottom: 1px solid transparent;
+  border-bottom-color: transparent;
+  margin-bottom: -1px;
+}
+
+.sp-tab-button--active {
+  color: var(--sp-colors-fg-active);
+  border-bottom-color: var(--sp-colors-accent);
+}
+
+.sp-editor {
+  flex: 1;
+  height: 100%;
+  position: relative;
+  background-color: var(--sp-colors-bg-default);
+}
+
+/* Preview-specific styles */
 .preview-only-mode .sp-overlay {
   display: none;
 }
@@ -72,6 +108,21 @@
   height: 100%;
 }
 
+.sp-preview {
+  flex: 1;
+  background-color: white;
+  overflow: hidden;
+  position: relative;
+}
+
+.sp-preview-iframe {
+  border: 0;
+  outline: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 300px;
+}
+
 .sp-error {
   color: var(--sp-colors-fg-error);
   background-color: var(--sp-colors-bg-error);
@@ -79,4 +130,34 @@
   font-size: var(--sp-font-size);
   font-family: var(--sp-font-body);
   white-space: pre-wrap;
+}
+
+/* Navigator styles */
+.sp-navigator {
+  display: flex;
+  flex-direction: column;
+  width: 20%;
+  min-width: 200px;
+  max-width: 300px;
+  border-right: 1px solid var(--internal-sandpack-border-color);
+  overflow: auto;
+}
+
+.sp-navigator-item {
+  display: flex;
+  align-items: center;
+  padding: var(--sp-space-2) var(--sp-space-3);
+  cursor: pointer;
+  color: var(--sp-colors-fg-default);
+  font-family: var(--sp-font-body);
+  font-size: var(--sp-font-size);
+}
+
+.sp-navigator-item:hover {
+  background-color: var(--sp-colors-bg-active);
+}
+
+.sp-navigator-item--active {
+  background-color: var(--sp-colors-bg-active);
+  color: var(--sp-colors-accent);
 }

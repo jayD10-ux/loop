@@ -1,3 +1,4 @@
+
 import { createRoot } from 'react-dom/client';
 import { ClerkProvider } from '@clerk/clerk-react';
 import App from './App.tsx';
@@ -9,9 +10,9 @@ if (!CLERK_PUBLISHABLE_KEY) {
   throw new Error("Missing Clerk Publishable Key");
 }
 
-// Import Sandpack styles or our fallback
-import '@codesandbox/sandpack-react/dist/index.css';
-import './styles/sandpack.css'; // Our fallback styles for Sandpack
+// Import our fallback styles for Sandpack
+// Note: We're removing the problematic import and only using our custom styles
+import './styles/sandpack.css';
 
 createRoot(document.getElementById("root")!).render(
   <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
