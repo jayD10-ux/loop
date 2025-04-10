@@ -12,7 +12,6 @@ import {
   Monitor, 
   Smartphone, 
   Tablet, 
-  ExternalLink,
   Eye,
   EyeOff,
   Code,
@@ -115,12 +114,13 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
   // Check if sandpackFiles is empty
   const hasSandpackFiles = Object.keys(sandpackFiles).length > 0;
 
-  // Get entry file - prefer index.html or index.js
+  // Get entry file - prefer index.html for vanilla
   const entryFile = 
     Object.keys(sandpackFiles).find(file => file === "index.html") ||
+    Object.keys(sandpackFiles).find(file => file.endsWith(".html")) ||
     Object.keys(sandpackFiles).find(file => file === "index.js") ||
     Object.keys(sandpackFiles)[0] ||
-    "index.js";
+    "index.html";
 
   // Error display component for preview issues
   const ErrorDisplay = () => (
@@ -133,7 +133,7 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
         <h3 className="text-md font-medium mb-2">Troubleshooting:</h3>
         <ul className="list-disc pl-6 space-y-2">
           <li>Check for syntax errors in your code</li>
-          <li>Ensure all required dependencies are available</li>
+          <li>Ensure all required files are included (HTML, CSS, JS)</li>
           <li>View the code tab to examine and fix issues</li>
         </ul>
       </div>
@@ -238,10 +238,13 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
 
       <div className="flex-1 relative">
         {activeTab === 'preview' && (
-          <div className="w-full h-full" ref={previewRef}>
+          <div 
+            className={`w-full h-full ${activeDevice === 'mobile' ? 'max-w-[375px]' : activeDevice === 'tablet' ? 'max-w-[768px]' : ''} mx-auto`} 
+            ref={previewRef}
+          >
             {hasSandpackFiles ? (
               <Sandpack
-                template={prototype.tech_stack as "react" | "vanilla"}
+                template="vanilla"
                 files={sandpackFiles}
                 options={{
                   showNavigator: false,
@@ -263,10 +266,8 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
                 }}
                 customSetup={{
                   entry: entryFile,
-                  dependencies: {
-                    "react": "^18.0.0",
-                    "react-dom": "^18.0.0",
-                  }
+                  // Only include minimal dependencies needed for vanilla projects
+                  dependencies: {}
                 }}
                 theme="light"
               />
@@ -279,7 +280,7 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
         {activeTab === 'code' && (
           <div className="h-full w-full">
             <Sandpack
-              template={prototype.tech_stack as "react" | "vanilla"}
+              template="vanilla"
               files={sandpackFiles}
               options={{
                 showNavigator: true,
@@ -290,7 +291,9 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
                 editorWidthPercentage: 60,
               }}
               customSetup={{
-                entry: entryFile
+                entry: entryFile,
+                // Only include minimal dependencies
+                dependencies: {}
               }}
               theme="light"
             />

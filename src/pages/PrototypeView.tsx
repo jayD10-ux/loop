@@ -76,8 +76,10 @@ const PrototypeView = () => {
     );
   }
 
+  // Prepare files for Sandpack
   const sandpackFiles = Object.entries(prototype?.files || {}).reduce(
     (acc, [path, content]) => {
+      // Remove leading slash for Sandpack compatibility
       const sandpackPath = path.startsWith('/') ? path.substring(1) : path;
       return {
         ...acc,
@@ -94,12 +96,13 @@ const PrototypeView = () => {
     console.warn("No files found in prototype for preview");
   }
 
-  // Get entry file - prefer index.html or index.js
+  // Get entry file - prefer index.html for vanilla projects
   const entryFile = 
     Object.keys(sandpackFiles).find(file => file === "index.html") ||
+    Object.keys(sandpackFiles).find(file => file.endsWith(".html")) ||
     Object.keys(sandpackFiles).find(file => file === "index.js") ||
     Object.keys(sandpackFiles)[0] ||
-    "index.js";
+    "index.html";
 
   return (
     <div className="min-h-screen flex flex-col w-full">
@@ -153,7 +156,7 @@ const PrototypeView = () => {
           <div className="h-[calc(100vh-12rem)]">
             {hasSandpackFiles ? (
               <Sandpack
-                template={prototype?.tech_stack as "react" | "vanilla"}
+                template="vanilla"
                 files={sandpackFiles}
                 options={{
                   showNavigator: false,
@@ -175,10 +178,8 @@ const PrototypeView = () => {
                 }}
                 customSetup={{
                   entry: entryFile,
-                  dependencies: {
-                    "react": "^18.0.0",
-                    "react-dom": "^18.0.0",
-                  }
+                  // Only include basic dependencies needed for vanilla projects
+                  dependencies: {}
                 }}
                 theme="light"
               />
@@ -197,7 +198,7 @@ const PrototypeView = () => {
           <div className="h-[calc(100vh-12rem)]">
             {hasSandpackFiles ? (
               <Sandpack
-                template={prototype?.tech_stack as "react" | "vanilla"}
+                template="vanilla"
                 files={sandpackFiles}
                 options={{
                   showNavigator: true,
@@ -208,7 +209,9 @@ const PrototypeView = () => {
                   editorWidthPercentage: 60
                 }}
                 customSetup={{
-                  entry: entryFile
+                  entry: entryFile,
+                  // Only include basic dependencies needed for vanilla projects
+                  dependencies: {}
                 }}
                 theme="light"
               />

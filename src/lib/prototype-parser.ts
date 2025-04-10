@@ -102,35 +102,79 @@ export async function parseZipFile(file: File): Promise<ParsedPrototype> {
       };
     }
     
-    // If no entry point found, create a simple one
-    if (!hasReact && !hasIndexHtml && !files['/index.js'] && !files['/index.html']) {
+    // If no index.html found, create a default one to display all files
+    if (!hasIndexHtml) {
       const fileKeys = Object.keys(files);
-      if (fileKeys.length > 0) {
-        // Create a simple index.html that includes the first file
-        const firstFile = fileKeys[0].substring(1); // remove leading slash
-        files['/index.html'] = `
+      // Create a simple index.html that lists all files
+      let fileListHtml = fileKeys.map(file => {
+        const fileName = file.split('/').pop();
+        // Create links for HTML files, just list others
+        if (file.endsWith('.html')) {
+          return `<li><a href="${file}" target="_blank">${fileName}</a></li>`;
+        }
+        return `<li>${fileName} - <a href="#" onclick="displayFileContent('${file}'); return false;">View</a></li>`;
+      }).join('\n      ');
+      
+      // Find a good default file to show
+      const htmlFiles = fileKeys.filter(f => f.endsWith('.html'));
+      const jsFiles = fileKeys.filter(f => f.endsWith('.js'));
+      const cssFiles = fileKeys.filter(f => f.endsWith('.css'));
+      
+      // Choose a sample file to display
+      const sampleFile = htmlFiles[0] || jsFiles[0] || cssFiles[0] || fileKeys[0];
+      
+      files['/index.html'] = `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Preview</title>
+  <title>Project Files</title>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; line-height: 1.6; padding: 1rem; }
+    .container { display: flex; max-width: 1200px; margin: 0 auto; gap: 2rem; }
+    .file-list { flex: 1; }
+    .file-content { flex: 2; }
+    pre { background: #f5f5f5; padding: 1rem; border-radius: 4px; overflow: auto; }
+  </style>
 </head>
 <body>
   <h1>Project Files</h1>
-  <p>This ZIP didn't have a main entry point. Here are the files found:</p>
-  <ul>
-    ${fileKeys.map(file => `<li>${file}</li>`).join('\n    ')}
-  </ul>
-  <p>First file contents:</p>
-  <pre>${files[fileKeys[0]].substring(0, 1000)}${files[fileKeys[0]].length > 1000 ? '...' : ''}</pre>
-</body>
-</html>`;
-        hasIndexHtml = true;
+  <div class="container">
+    <div class="file-list">
+      <h2>Files</h2>
+      <ul>
+      ${fileListHtml}
+      </ul>
+    </div>
+    <div class="file-content">
+      <h2 id="file-name">File Content</h2>
+      <pre id="file-content">${files[sampleFile] ? files[sampleFile].substring(0, 500) + (files[sampleFile].length > 500 ? '...' : '') : 'Select a file to view its content'}</pre>
+    </div>
+  </div>
+
+  <script>
+    function displayFileContent(filePath) {
+      const content = ${JSON.stringify(files)};
+      const fileNameEl = document.getElementById('file-name');
+      const fileContentEl = document.getElementById('file-content');
+      
+      if (fileNameEl && fileContentEl && content[filePath]) {
+        fileNameEl.textContent = filePath.split('/').pop();
+        fileContentEl.textContent = content[filePath];
       }
     }
     
-    // Determine tech stack (React takes precedence)
-    const techStack: TechStack = hasReact ? 'react' : 'vanilla';
+    // Initialize with the first file
+    displayFileContent('${sampleFile}');
+  </script>
+</body>
+</html>`;
+      
+      hasIndexHtml = true;
+    }
+    
+    // Determine tech stack (Vanilla JS by default for simplicity)
+    const techStack: TechStack = 'vanilla';
     
     return {
       files,
