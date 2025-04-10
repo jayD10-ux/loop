@@ -105,9 +105,15 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
   const sandpackFiles = Object.entries(prototype.files || {}).reduce(
     (acc, [path, content]) => {
       const sandpackPath = path.startsWith('/') ? path.substring(1) : path;
+      // Fix optional chaining in JavaScript files that might cause issues
+      let processedContent = content as string;
+      if (path.endsWith('.js')) {
+        // Replace optional chaining with a safer alternative
+        processedContent = processedContent.replace(/(\w+)\?\.([\w\d_$]+)/g, '$1 && $1.$2');
+      }
       return {
         ...acc,
-        [sandpackPath]: { code: content as string },
+        [sandpackPath]: { code: processedContent },
       };
     },
     {}
@@ -224,6 +230,8 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
                     'sp-layout': 'preview-only-layout w-full h-full m-0 p-0',
                     'sp-stack': 'preview-only-stack w-full h-full m-0 p-0',
                     'sp-wrapper': 'preview-only-wrapper w-full h-full m-0 p-0',
+                    'sp-preview-container': 'w-full h-full border-none m-0 p-0',
+                    'sp-preview-iframe': 'w-full h-full border-none m-0 p-0'
                   }
                 }}
                 customSetup={{
