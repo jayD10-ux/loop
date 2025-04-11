@@ -164,16 +164,20 @@ export function PreviewWindow({
             // Handle files data safely - filesData is the data object, not an error
             if (filesData && typeof filesData === 'object') {
               // Check if 'files' property exists to handle the TypeScript error
-              const filesContent = 'files' in filesData ? filesData.files : null;
-              
-              if (filesContent) {
-                const typedFiles = convertFilesToTypedFormat(filesContent);
-                if (Object.keys(typedFiles).length > 0) {
-                  setPrototypeFiles(typedFiles);
-                  setUsingFallback(true);
-                  setLoading(false);
+              if ('files' in filesData) {
+                const filesContent = filesData.files;
+                
+                if (filesContent) {
+                  const typedFiles = convertFilesToTypedFormat(filesContent);
+                  if (Object.keys(typedFiles).length > 0) {
+                    setPrototypeFiles(typedFiles);
+                    setUsingFallback(true);
+                    setLoading(false);
+                  } else {
+                    throw new Error('No valid files found for this prototype');
+                  }
                 } else {
-                  throw new Error('No valid files found for this prototype');
+                  throw new Error('Files property is empty in prototype data');
                 }
               } else {
                 throw new Error('No files property found in prototype data');
