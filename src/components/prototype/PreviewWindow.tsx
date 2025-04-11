@@ -34,6 +34,7 @@ export function PreviewWindow({
       }
 
       try {
+        // First try to fetch all fields we need
         const { data, error } = await supabase
           .from('prototypes')
           .select('deployment_status, deployment_url, preview_url, files')
@@ -41,33 +42,28 @@ export function PreviewWindow({
           .single();
 
         if (error) {
-          // Special handling for missing columns error
-          if (error.message.includes("column 'deployment_status' does not exist")) {
-            // Fallback to fetching just the files if deployment columns don't exist
-            const { data: prototypeData, error: fetchError } = await supabase
+          // If we get an error about columns not existing, try a more limited query
+          if (error.message.includes("column 'deployment_status' does not exist") || 
+              error.message.includes("column 'preview_url' does not exist")) {
+            
+            // Try to fetch just files, which should exist in any case
+            const { data: fileData, error: fileError } = await supabase
               .from('prototypes')
-              .select('files, preview_url')
+              .select('files')
               .eq('id', prototypeId)
               .single();
               
-            if (fetchError) {
-              throw fetchError;
+            if (fileError) {
+              throw fileError;
             }
             
-            if (prototypeData) {
-              // Check if there's a preview URL first
-              if (prototypeData.preview_url) {
-                setIframeUrl(prototypeData.preview_url);
-                setIsLoading(false);
-                return;
-              } else if (prototypeData.files && Object.keys(prototypeData.files).length > 0) {
-                // We have files but no deployment, set up for in-browser display
-                setIframeUrl(null);
-                setIsLoading(false);
-                return;
-              } else {
-                throw new Error("No preview or files available for this prototype");
-              }
+            if (fileData && typeof fileData.files === 'object' && Object.keys(fileData.files).length > 0) {
+              // We have files but no deployment or preview URL, set up for in-browser display
+              setIframeUrl(null);
+              setIsLoading(false);
+              return;
+            } else {
+              throw new Error("No preview or files available for this prototype");
             }
           } else {
             throw error;
@@ -75,14 +71,14 @@ export function PreviewWindow({
         }
 
         if (data) {
-          // Check for preview URL first
+          // First priority: check if there's a preview URL
           if (data.preview_url) {
             setIframeUrl(data.preview_url);
             setIsLoading(false);
             return;
           }
           
-          // Then check deployment URL/status
+          // Second priority: check deployment status and URL
           if (data.deployment_status === 'deployed' && data.deployment_url) {
             setIframeUrl(data.deployment_url);
             setIsLoading(false);
@@ -92,7 +88,7 @@ export function PreviewWindow({
           } else if (data.deployment_status === 'failed') {
             setError("Deployment failed. Please try again.");
             setIsLoading(false);
-          } else if (data.files && Object.keys(data.files).length > 0) {
+          } else if (typeof data.files === 'object' && Object.keys(data.files).length > 0) {
             // If no deployment but has files, we can set up for in-browser display
             setIframeUrl(null); // We'll use the files directly
             setIsLoading(false);
