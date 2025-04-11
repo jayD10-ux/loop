@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircle } from 'lucide-react';
@@ -162,7 +161,7 @@ export function PreviewWindow({
             console.log('Files data fetched:', filesData);
             
             // Handle files data safely - filesData is the data object, not an error
-            if (filesData && typeof filesData === 'object' && 'files' in filesData) {
+            if (filesData && typeof filesData === 'object' && 'files' in filesData && filesData.files) {
               const typedFiles = convertFilesToTypedFormat(filesData.files);
               if (Object.keys(typedFiles).length > 0) {
                 setPrototypeFiles(typedFiles);
@@ -192,7 +191,7 @@ export function PreviewWindow({
         );
 
         // Update files if not already set and files exists
-        if (prototypeData && 'files' in prototypeData) {
+        if (prototypeData && 'files' in prototypeData && prototypeData.files) {
           if (!prototypeFiles || Object.keys(prototypeFiles).length === 0) {
             const typedFiles = convertFilesToTypedFormat(prototypeData.files);
             console.log('Setting prototype files with', Object.keys(typedFiles).length, 'files');
