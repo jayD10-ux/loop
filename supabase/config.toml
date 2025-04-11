@@ -15,4 +15,3 @@ port = 54323
 [functions]
 [functions.process-prototype]
 verify_jwt = false
-

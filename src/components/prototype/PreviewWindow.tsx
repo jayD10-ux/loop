@@ -162,7 +162,7 @@ export function PreviewWindow({
             console.log('Files data fetched:', filesData);
             
             // Handle files data safely - filesData is the data object, not an error
-            if (filesData && 'files' in filesData) {
+            if (filesData && typeof filesData === 'object' && 'files' in filesData) {
               const typedFiles = convertFilesToTypedFormat(filesData.files);
               if (Object.keys(typedFiles).length > 0) {
                 setPrototypeFiles(typedFiles);
