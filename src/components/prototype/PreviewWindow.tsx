@@ -102,17 +102,24 @@ export function PreviewWindow({
 
     const checkDeploymentStatus = async () => {
       try {
+        console.log('Checking deployment status for prototype:', prototypeId);
+        
         // First, try to get all columns including deployment status
         const { data: prototypeData, error: fetchError } = await supabase
           .from('prototypes')
-          .select('files, deployment_status, deployment_url')
+          .select('files, deployment_status, deployment_url, file_path')
           .eq('id', prototypeId)
           .single();
+
+        console.log('Prototype data fetched:', prototypeData);
+        console.log('Fetch error:', fetchError);
 
         if (fetchError) {
           // Check if the error is due to missing columns
           if (fetchError.message.includes('column') && 
               fetchError.message.includes('does not exist')) {
+            
+            console.log('Column does not exist, fetching just files');
             
             // Fall back to just fetching files if deployment columns don't exist
             const { data: filesData, error: filesError } = await supabase
@@ -123,6 +130,8 @@ export function PreviewWindow({
               
             if (filesError) throw new Error(filesError.message);
             if (!filesData) throw new Error('Prototype not found');
+            
+            console.log('Files data fetched:', filesData);
             
             // Handle files data safely
             if (filesData && 'files' in filesData) {
@@ -145,6 +154,8 @@ export function PreviewWindow({
         }
 
         if (!prototypeData) throw new Error('Prototype not found');
+        
+        console.log('Processing prototype data:', prototypeData);
 
         // Update files if not already set and files exists
         if (prototypeData && 'files' in prototypeData) {
@@ -161,6 +172,9 @@ export function PreviewWindow({
           
           const deployStatus = prototypeData.deployment_status as string;
           const deployUrl = prototypeData.deployment_url as string;
+          
+          console.log('Deployment status:', deployStatus);
+          console.log('Deployment URL:', deployUrl);
           
           if (deployStatus === 'deployed' && deployUrl) {
             setStatus('deployed');
@@ -250,6 +264,7 @@ export function PreviewWindow({
 
   // Handle iframe load error
   const handleIframeError = () => {
+    console.error('Failed to load iframe for URL:', url);
     setError('Failed to load prototype preview');
     // If we have files, fall back to Sandpack
     if (prototypeFiles && Object.keys(prototypeFiles).length > 0) {
@@ -293,6 +308,9 @@ export function PreviewWindow({
     const processedFiles = sandpackFiles();
     const entryFile = getEntryFile();
     
+    console.log('Using Sandpack fallback with files:', Object.keys(prototypeFiles));
+    console.log('Entry file:', entryFile);
+    
     return (
       <div className={`w-full h-full ${className}`}>
         <Sandpack
@@ -330,6 +348,7 @@ export function PreviewWindow({
   }
 
   if (status === 'deployed' && url) {
+    console.log('Rendering deployed iframe with URL:', url);
     return (
       <div className={`w-full h-full ${className}`}>
         <PreviewIframe 

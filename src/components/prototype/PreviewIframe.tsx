@@ -28,12 +28,14 @@ export function PreviewIframe({
 
   // Reset state when URL changes
   useEffect(() => {
+    console.log('PreviewIframe: URL changed to', url);
     setLoaded(false);
     setError(false);
     retryCount.current = 0;
   }, [url]);
 
   const handleLoad = () => {
+    console.log('PreviewIframe: iframe loaded');
     if (iframeRef.current) {
       try {
         // Check if the iframe content has loaded properly
@@ -41,6 +43,7 @@ export function PreviewIframe({
                         (iframeRef.current.contentWindow && iframeRef.current.contentWindow.document);
         
         if (iframeDoc && iframeDoc.body && iframeDoc.body.innerHTML) {
+          console.log('PreviewIframe: Content loaded successfully');
           setLoaded(true);
           if (onLoad) onLoad();
         } else if (retryCount.current < maxRetries) {
@@ -66,6 +69,7 @@ export function PreviewIframe({
   };
 
   const handleError = () => {
+    console.error('PreviewIframe: Error loading iframe');
     if (retryCount.current < maxRetries) {
       retryCount.current++;
       console.warn(`Preview iframe failed to load. Retrying (${retryCount.current}/${maxRetries})...`);

@@ -27,7 +27,6 @@ export function PrototypeUploader({
   const { toast } = useToast();
 
   const validateFile = (file: File): string | null => {
-    // Check file type
     const validTypes = ['.html', '.htm', '.zip', 'text/html', 'application/zip'];
     const fileType = file.type;
     const fileExtension = `.${file.name.split('.').pop()?.toLowerCase()}`;
@@ -36,7 +35,6 @@ export function PrototypeUploader({
       return 'Please upload an HTML or ZIP file';
     }
     
-    // Check file size (max 10MB)
     const maxSize = 10 * 1024 * 1024; // 10MB
     if (file.size > maxSize) {
       return 'File size exceeds the limit (10MB)';
@@ -71,14 +69,13 @@ export function PrototypeUploader({
     setError(null);
     
     try {
-      // Generate a unique ID for the prototype
       const prototypeId = uuidv4();
       
-      // Create the file path for storage
       const fileExtension = file.name.split('.').pop()?.toLowerCase();
       const filePath = `${userId}/${prototypeId}.${fileExtension}`;
       
-      // 1. Upload the file to storage
+      console.log('Uploading file to storage:', filePath);
+      
       const { error: uploadError } = await supabase.storage
         .from('prototype-uploads')
         .upload(filePath, file, {
@@ -88,18 +85,20 @@ export function PrototypeUploader({
       
       if (uploadError) throw new Error(`Upload failed: ${uploadError.message}`);
       setUploadProgress(50);
+      console.log('File uploaded successfully to storage');
       
-      // 2. Insert a new row in the prototypes table
       const prototypeData = {
         id: prototypeId,
         name: file.name.replace(`.${fileExtension}`, ''),
         description: null,
         created_by: userId,
         tech_stack: fileExtension === 'zip' ? 'zip-package' : 'html',
-        files: {}, // Empty files object as the content will be deployed separately
+        files: {},
         file_path: filePath,
         deployment_status: 'pending',
       };
+      
+      console.log('Creating prototype record:', prototypeData);
       
       const { error: insertError } = await supabase
         .from('prototypes')
@@ -107,9 +106,13 @@ export function PrototypeUploader({
       
       if (insertError) throw new Error(`Database insertion failed: ${insertError.message}`);
       setUploadProgress(75);
+      console.log('Prototype record created successfully');
       
-      // 3. Trigger the edge function to process the prototype
-      const response = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/process-prototype`, {
+      console.log('Triggering edge function to process prototype');
+      const functionUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/process-prototype`;
+      console.log('Edge function URL:', functionUrl);
+      
+      const response = await fetch(functionUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -118,10 +121,13 @@ export function PrototypeUploader({
         body: JSON.stringify({ prototypeId }),
       });
       
+      console.log('Edge function response status:', response.status);
+      const responseData = await response.json();
+      console.log('Edge function response data:', responseData);
+      
       setUploadProgress(100);
       
       if (!response.ok) {
-        const responseData = await response.json();
         throw new Error(`Processing failed: ${responseData.error || 'Unknown error'}`);
       }
       
@@ -130,7 +136,6 @@ export function PrototypeUploader({
         description: 'Your prototype is being processed and will be available shortly.',
       });
       
-      // Return the prototype data to the parent component
       if (onUploadComplete) {
         onUploadComplete(prototypeData as Prototype);
       }
