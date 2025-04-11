@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { 
   Tabs, 
@@ -35,8 +34,11 @@ interface PrototypeViewerProps {
     updated_at: string;
     tech_stack: string;
     files: Record<string, string>;
-    previewUrl?: string; // Optional, fallback to placeholder
-    figmaUrl?: string; // Optional, fallback to placeholder
+    previewUrl?: string;
+    figma_link?: string | null;
+    figma_file_key?: string | null;
+    figma_file_name?: string | null;
+    figma_preview_url?: string | null;
     deployment_status?: 'pending' | 'deployed' | 'failed';
     deployment_url?: string;
   };
@@ -55,7 +57,6 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
   const previewRef = useRef<HTMLDivElement>(null);
   const commentThreadRef = useRef<HTMLDivElement>(null);
   
-  // Mock comments data - in a real app, these would come from the database
   const comments = [
     {
       id: "c1",
@@ -100,7 +101,6 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
     setControlsVisible(!controlsVisible);
   };
 
-  // Prepare Sandpack files from prototype
   const sandpackFiles = Object.entries(prototype.files || {}).reduce(
     (acc, [path, content]) => {
       const sandpackPath = path.startsWith('/') ? path.substring(1) : path;
@@ -112,10 +112,8 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
     {}
   );
 
-  // Check if sandpackFiles is empty
   const hasSandpackFiles = Object.keys(sandpackFiles).length > 0;
 
-  // Get entry file - prefer index.html for vanilla
   const entryFile = 
     Object.keys(sandpackFiles).find(file => file === "index.html") ||
     Object.keys(sandpackFiles).find(file => file.endsWith(".html")) ||
@@ -123,7 +121,6 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
     Object.keys(sandpackFiles)[0] ||
     "index.html";
 
-  // Device preview class based on active device
   const getDevicePreviewClass = () => {
     switch (activeDevice) {
       case "mobile":
@@ -134,6 +131,8 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
         return "w-full h-full";
     }
   };
+
+  const figmaUrl = prototype.figma_link || null;
 
   return (
     <div className="h-screen flex flex-col bg-background">
@@ -235,7 +234,6 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
                   }}
                   customSetup={{
                     entry: entryFile,
-                    // Only include minimal dependencies needed for vanilla projects
                     dependencies: {}
                   }}
                   theme="light"
@@ -275,7 +273,6 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
               }}
               customSetup={{
                 entry: entryFile,
-                // Only include minimal dependencies
                 dependencies: {}
               }}
               theme="light"
@@ -285,11 +282,23 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
         
         {activeTab === 'design' && (
           <div className="w-full h-full absolute inset-0 m-0 p-0">
-            <iframe 
-              src={prototype.figmaUrl || "https://placehold.co/1200x900/EC4899/FFFFFF?text=Figma+Design"}
-              className="w-full h-full border-none m-0 p-0"
-              title="Figma Design"
-            />
+            {prototype.figma_link ? (
+              <iframe 
+                src={prototype.figma_link}
+                className="w-full h-full border-none m-0 p-0"
+                title="Figma Design"
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full w-full bg-gray-50 p-6">
+                <div className="bg-white rounded-lg shadow-sm p-6 max-w-md w-full text-center">
+                  <Figma className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-3">No Figma Design Connected</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    This prototype doesn't have a Figma design connected to it.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         )}
         

@@ -1,17 +1,5 @@
 
 project_id = "tfmefxbidfeppyquyzww"
 
-[api]
-enabled = true
-port = 54321
-schemas = ["public", "storage"]
-
-[db]
-port = 54322
-
-[studio]
-port = 54323
-
-[functions]
-[functions.process-prototype]
-verify_jwt = false
+[functions.get-figma-file]
+verify_jwt = true
