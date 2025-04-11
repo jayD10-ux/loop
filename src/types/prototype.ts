@@ -4,8 +4,8 @@ export interface Prototype {
   name: string;
   description: string | null;
   created_by: string;
-  created_at: string; // Changed from optional to required
-  updated_at: string; // Changed from optional to required
+  created_at: string; // Required field
+  updated_at: string; // Required field  
   tech_stack: 'react' | 'vanilla' | 'zip-package' | 'external-url' | string;
   files: Record<string, string>;
   deployment_status?: 'pending' | 'deployed' | 'failed';

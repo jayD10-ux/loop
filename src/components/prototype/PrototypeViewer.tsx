@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { 
   Tabs, 
@@ -16,7 +15,7 @@ import {
   Pen,
   Share2, 
   Download,
-  Figma // Added missing Figma icon import
+  Figma
 } from "lucide-react";
 import { FeedbackMarker } from "./FeedbackMarker";
 import { CommentThread } from "./CommentThread";

@@ -1,8 +1,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
 import { Prototype } from "@/types/prototype";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface PreviewWindowProps {
   prototypeId: string;
@@ -27,6 +28,7 @@ export function PreviewWindow({
 
   useEffect(() => {
     const fetchPrototypeStatus = async () => {
+      // If deployment URL is already provided as a prop, use it
       if (deploymentUrl) {
         setIframeUrl(deploymentUrl);
         setIsLoading(false);
@@ -34,7 +36,10 @@ export function PreviewWindow({
       }
 
       try {
-        // First try to fetch all fields we need
+        // Determine which columns we need to select
+        let columnsToSelect = 'files';
+        
+        // Try to fetch prototype data with a progressive approach
         const { data, error } = await supabase
           .from('prototypes')
           .select('deployment_status, deployment_url, preview_url, files')
@@ -42,11 +47,11 @@ export function PreviewWindow({
           .single();
 
         if (error) {
-          // If we get an error about columns not existing, try a more limited query
+          // Handle different types of column errors specifically
           if (error.message.includes("column 'deployment_status' does not exist") || 
               error.message.includes("column 'preview_url' does not exist")) {
             
-            // Try to fetch just files, which should exist in any case
+            // Fall back to fetching just the files
             const { data: fileData, error: fileError } = await supabase
               .from('prototypes')
               .select('files')
@@ -54,11 +59,12 @@ export function PreviewWindow({
               .single();
               
             if (fileError) {
+              console.error("Error fetching prototype files:", fileError);
               throw fileError;
             }
             
+            // If we have files but no deployment info, prepare for in-browser display
             if (fileData && typeof fileData.files === 'object' && Object.keys(fileData.files).length > 0) {
-              // We have files but no deployment or preview URL, set up for in-browser display
               setIframeUrl(null);
               setIsLoading(false);
               return;
@@ -66,11 +72,12 @@ export function PreviewWindow({
               throw new Error("No preview or files available for this prototype");
             }
           } else {
+            console.error("Error fetching prototype:", error);
             throw error;
           }
         }
 
-        // TypeScript safety: Now we know data exists and is not an error
+        // Process the fetched data
         if (data) {
           // Use type assertion to help TypeScript understand the data structure
           const prototypeData = data as {
@@ -80,28 +87,33 @@ export function PreviewWindow({
             files?: Record<string, string>;
           };
 
-          // First priority: check if there's a preview URL
+          // Decision tree for preview sources with clear priorities
           if (prototypeData.preview_url) {
+            // First priority: use direct preview URL
             setIframeUrl(prototypeData.preview_url);
             setIsLoading(false);
-            return;
-          }
-          
-          // Second priority: check deployment status and URL
-          if (prototypeData.deployment_status === 'deployed' && prototypeData.deployment_url) {
+          } 
+          else if (prototypeData.deployment_status === 'deployed' && prototypeData.deployment_url) {
+            // Second priority: use deployment URL for deployed prototypes
             setIframeUrl(prototypeData.deployment_url);
             setIsLoading(false);
-          } else if (prototypeData.deployment_status === 'pending') {
+          } 
+          else if (prototypeData.deployment_status === 'pending') {
+            // Handle pending deployments
             setLoadingMessage("Prototype deployment in progress...");
-            // Continue checking status
-          } else if (prototypeData.deployment_status === 'failed') {
+            // Continue polling - interval is set up outside this function
+          } 
+          else if (prototypeData.deployment_status === 'failed') {
+            // Handle failed deployments
             setError("Deployment failed. Please try again.");
             setIsLoading(false);
-          } else if (prototypeData.files && typeof prototypeData.files === 'object' && Object.keys(prototypeData.files).length > 0) {
-            // If no deployment but has files, we can set up for in-browser display
-            setIframeUrl(null); // We'll use the files directly
+          } 
+          else if (prototypeData.files && typeof prototypeData.files === 'object' && Object.keys(prototypeData.files).length > 0) {
+            // Last option: use files directly for in-browser rendering
+            setIframeUrl(null);
             setIsLoading(false);
-          } else {
+          } 
+          else {
             setError("No preview available for this prototype.");
             setIsLoading(false);
           }
@@ -116,6 +128,7 @@ export function PreviewWindow({
       }
     };
 
+    // Initial fetch
     fetchPrototypeStatus();
 
     // Set up polling for pending deployments
@@ -123,17 +136,18 @@ export function PreviewWindow({
       checkStatusInterval.current = window.setInterval(() => {
         retryCount.current += 1;
         
+        // Give up after 30 retries (2.5 minutes)
         if (retryCount.current > 30) {
-          // Give up after 2.5 minutes (30 * 5 seconds)
           clearInterval(checkStatusInterval.current!);
           setError("Deployment is taking longer than expected. Please check back later.");
           setIsLoading(false);
         } else {
           fetchPrototypeStatus();
         }
-      }, 5000);
+      }, 5000); // Check every 5 seconds
     }
 
+    // Clean up interval on unmount
     return () => {
       if (checkStatusInterval.current) {
         clearInterval(checkStatusInterval.current);
@@ -150,6 +164,7 @@ export function PreviewWindow({
     setIsLoading(false);
   };
 
+  // Loading state
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-full w-full bg-gray-50">
@@ -164,17 +179,20 @@ export function PreviewWindow({
     );
   }
 
+  // Error state
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center h-full w-full bg-gray-50 p-6">
-        <div className="bg-white rounded-lg shadow-sm p-6 max-w-md w-full">
-          <h3 className="text-lg font-semibold text-red-600 mb-3">Preview Error</h3>
-          <p className="text-sm text-muted-foreground mb-4">{error}</p>
-        </div>
+        <Alert variant="destructive" className="max-w-md w-full">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Preview Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       </div>
     );
   }
 
+  // Render either iframe or file-based preview
   return (
     <div className="h-full w-full bg-white">
       {iframeUrl ? (
@@ -187,11 +205,20 @@ export function PreviewWindow({
           allow="accelerometer; camera; encrypted-media; geolocation; gyroscope; microphone; midi; payment; usb; xr-spatial-tracking"
           loading="lazy"
           title="Prototype Preview"
+          sandbox="allow-forms allow-modals allow-orientation-lock allow-pointer-lock allow-popups allow-popups-to-escape-sandbox allow-presentation allow-same-origin allow-scripts"
         />
       ) : (
-        // If we don't have a URL but have files, we could render a sandpack or other preview here
-        <div className="flex items-center justify-center h-full">
-          <p className="text-muted-foreground">Use Sandpack or another in-browser renderer here for file-based prototypes</p>
+        <div className="flex flex-col items-center justify-center h-full p-6">
+          <Alert className="max-w-md w-full mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Local Preview Mode</AlertTitle>
+            <AlertDescription>
+              This prototype is being rendered in local preview mode. Some features may be limited.
+            </AlertDescription>
+          </Alert>
+          <div className="text-center">
+            <p className="text-muted-foreground">Use Sandpack or another in-browser renderer here for file-based prototypes</p>
+          </div>
         </div>
       )}
     </div>
