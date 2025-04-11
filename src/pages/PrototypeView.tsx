@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,7 +36,20 @@ const PrototypeView = () => {
           throw new Error("Prototype not found");
         }
         
-        setPrototype(data as Prototype);
+        // Ensure the data has the required properties with proper defaults
+        const prototypeData: Prototype = {
+          ...data,
+          created_at: data.created_at || new Date().toISOString(),
+          updated_at: data.updated_at || new Date().toISOString(),
+          files: data.files || {},
+          description: data.description || null,
+          figma_link: data.figma_link || null,
+          figma_file_key: data.figma_file_key || null,
+          figma_file_name: data.figma_file_name || null,
+          figma_preview_url: data.figma_preview_url || null
+        };
+        
+        setPrototype(prototypeData);
       } catch (err: any) {
         console.error("Error fetching prototype:", err);
         setError(err.message || "Failed to load prototype");

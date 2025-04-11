@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
@@ -40,12 +41,12 @@ export function PreviewWindow({
           .single();
 
         if (error) {
-          // Handle the specific error about missing columns
+          // Special handling for missing columns error
           if (error.message.includes("column 'deployment_status' does not exist")) {
-            // Fallback to using files directly if deployment columns don't exist
+            // Fallback to fetching just the files if deployment columns don't exist
             const { data: prototypeData, error: fetchError } = await supabase
               .from('prototypes')
-              .select('files')
+              .select('files, preview_url')
               .eq('id', prototypeId)
               .single();
               
@@ -53,14 +54,20 @@ export function PreviewWindow({
               throw fetchError;
             }
             
-            if (prototypeData && prototypeData.files) {
-              const filesObj = prototypeData.files as Record<string, string>;
-              // Use files from the data
-              setIframeUrl(null); // We'll use the files directly in a data URL
-              setIsLoading(false);
-              return;
-            } else {
-              throw new Error("No files found for this prototype");
+            if (prototypeData) {
+              // Check if there's a preview URL first
+              if (prototypeData.preview_url) {
+                setIframeUrl(prototypeData.preview_url);
+                setIsLoading(false);
+                return;
+              } else if (prototypeData.files && Object.keys(prototypeData.files).length > 0) {
+                // We have files but no deployment, set up for in-browser display
+                setIframeUrl(null);
+                setIsLoading(false);
+                return;
+              } else {
+                throw new Error("No preview or files available for this prototype");
+              }
             }
           } else {
             throw error;
@@ -85,7 +92,7 @@ export function PreviewWindow({
           } else if (data.deployment_status === 'failed') {
             setError("Deployment failed. Please try again.");
             setIsLoading(false);
-          } else if (Object.keys(data.files || {}).length > 0) {
+          } else if (data.files && Object.keys(data.files).length > 0) {
             // If no deployment but has files, we can set up for in-browser display
             setIframeUrl(null); // We'll use the files directly
             setIsLoading(false);
