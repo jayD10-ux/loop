@@ -109,14 +109,14 @@ export function PrototypeUploader({
       console.log('Prototype record created successfully');
       
       console.log('Triggering edge function to process prototype');
-      const functionUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/process-prototype`;
+      const functionUrl = `${supabase.supabaseUrl}/functions/v1/process-prototype`;
       console.log('Edge function URL:', functionUrl);
       
       const response = await fetch(functionUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+          'Authorization': `Bearer ${supabase.supabaseKey}`,
         },
         body: JSON.stringify({ prototypeId }),
       });

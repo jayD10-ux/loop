@@ -36,10 +36,13 @@ export function PreviewWindow({
   const [retryCount, setRetryCount] = useState(0);
   const [usingFallback, setUsingFallback] = useState(false);
   const [prototypeFiles, setPrototypeFiles] = useState<Record<string, string> | null>(files || null);
+  const [lastPolledAt, setLastPolledAt] = useState<Date | null>(null);
 
   // Process files for Sandpack if available
   const sandpackFiles = useCallback(() => {
     if (!prototypeFiles || Object.keys(prototypeFiles).length === 0) return null;
+    
+    console.log('Preparing Sandpack files from:', Object.keys(prototypeFiles));
     
     return Object.entries(prototypeFiles).reduce(
       (acc, [path, content]) => {
@@ -61,40 +64,64 @@ export function PreviewWindow({
     if (!processedFiles) return "index.html";
     
     const fileKeys = Object.keys(processedFiles);
+    console.log('Available files for entry point selection:', fileKeys);
     
     // Prioritize finding entry files
-    return fileKeys.find(file => file === "index.html") ||
+    const entryFile = fileKeys.find(file => file === "index.html") ||
            fileKeys.find(file => file.endsWith(".html")) ||
            fileKeys.find(file => file === "index.js") ||
            fileKeys[0] ||
            "index.html";
+           
+    console.log('Selected entry file:', entryFile);
+    return entryFile;
   }, [prototypeFiles, sandpackFiles]);
 
   // Function to convert database files to typesafe format
-  const convertFilesToTypedFormat = (filesObj: Record<string, any> | string | number | boolean | null | any[]): Record<string, string> => {
+  const convertFilesToTypedFormat = (filesObj: any): Record<string, string> => {
+    console.log('Converting files data:', typeof filesObj, filesObj);
+    
     const typedFiles: Record<string, string> = {};
     
-    // Check if filesObj is a proper object (not null, array, or primitive)
-    if (filesObj && typeof filesObj === 'object' && !Array.isArray(filesObj)) {
-      Object.entries(filesObj).forEach(([key, value]) => {
-        if (typeof value === 'string') {
-          typedFiles[key] = value;
-        }
-      });
+    // Null check
+    if (!filesObj) {
+      console.warn('No files data to convert');
+      return typedFiles;
     }
     
+    // Check if filesObj is a proper object (not null, array, or primitive)
+    if (typeof filesObj === 'object' && !Array.isArray(filesObj)) {
+      try {
+        Object.entries(filesObj).forEach(([key, value]) => {
+          if (typeof value === 'string') {
+            typedFiles[key] = value;
+            console.log(`Added file: ${key} (${value.substring(0, 50)}...)`);
+          } else {
+            console.warn(`Skipped non-string file content for ${key}:`, typeof value);
+          }
+        });
+      } catch (err) {
+        console.error('Error processing files object:', err);
+      }
+    } else {
+      console.warn('Files data is not a proper object:', typeof filesObj);
+    }
+    
+    console.log('Converted to typed format with', Object.keys(typedFiles).length, 'files');
     return typedFiles;
   };
 
   // Poll for updates when status is pending
   useEffect(() => {
     if (status === 'deployed' && url) {
+      console.log('Preview is already deployed with URL:', url);
       setLoading(false);
       return;
     }
 
     // If we have files, we can use Sandpack as fallback
     if (prototypeFiles && Object.keys(prototypeFiles).length > 0) {
+      console.log('Using Sandpack fallback with', Object.keys(prototypeFiles).length, 'files');
       setUsingFallback(true);
       setLoading(false);
       return;
@@ -102,6 +129,7 @@ export function PreviewWindow({
 
     const checkDeploymentStatus = async () => {
       try {
+        setLastPolledAt(new Date());
         console.log('Checking deployment status for prototype:', prototypeId);
         
         // First, try to get all columns including deployment status
@@ -156,11 +184,18 @@ export function PreviewWindow({
         if (!prototypeData) throw new Error('Prototype not found');
         
         console.log('Processing prototype data:', prototypeData);
+        console.log('Raw files data type:', typeof prototypeData.files);
+        console.log('Raw files data sample:', 
+          typeof prototypeData.files === 'object' 
+            ? Object.keys(prototypeData.files).slice(0, 3) 
+            : String(prototypeData.files).substring(0, 100)
+        );
 
         // Update files if not already set and files exists
         if (prototypeData && 'files' in prototypeData) {
           if (!prototypeFiles || Object.keys(prototypeFiles).length === 0) {
             const typedFiles = convertFilesToTypedFormat(prototypeData.files);
+            console.log('Setting prototype files with', Object.keys(typedFiles).length, 'files');
             setPrototypeFiles(typedFiles);
           }
         }
@@ -177,16 +212,19 @@ export function PreviewWindow({
           console.log('Deployment URL:', deployUrl);
           
           if (deployStatus === 'deployed' && deployUrl) {
+            console.log('Prototype is DEPLOYED with URL:', deployUrl);
             setStatus('deployed');
             setUrl(deployUrl);
             setLoading(false);
           } else if (deployStatus === 'failed') {
+            console.log('Deployment FAILED');
             setStatus('failed');
             
             // If we have files, we can still show a preview with Sandpack
             if (prototypeData && 'files' in prototypeData) {
               const typedFiles = convertFilesToTypedFormat(prototypeData.files);
               if (Object.keys(typedFiles).length > 0) {
+                console.log('Using Sandpack fallback due to deployment failure');
                 setPrototypeFiles(typedFiles);
                 setUsingFallback(true);
                 setLoading(false);
@@ -200,12 +238,14 @@ export function PreviewWindow({
             }
           } else {
             // Still pending, continue polling
+            console.log('Deployment still PENDING, continuing to poll');
             setStatus('pending');
             // Increment retry count to show different messages
             setRetryCount(prev => prev + 1);
           }
         } else if (prototypeData) {
           // Deployment columns don't exist, use Sandpack fallback
+          console.log('No deployment columns found, using Sandpack fallback');
           if ('files' in prototypeData) {
             const typedFiles = convertFilesToTypedFormat(prototypeData.files);
             if (Object.keys(typedFiles).length > 0) {
@@ -227,6 +267,7 @@ export function PreviewWindow({
         
         // Try to use local files as fallback if available
         if (prototypeFiles && Object.keys(prototypeFiles).length > 0) {
+          console.log('Using local files as fallback after error');
           setUsingFallback(true);
           setLoading(false);
         } else {
@@ -242,7 +283,7 @@ export function PreviewWindow({
 
     // Start polling
     const pollingInterval = setInterval(checkDeploymentStatus, 3000);
-
+    
     // Do an immediate check
     checkDeploymentStatus();
 
@@ -268,6 +309,7 @@ export function PreviewWindow({
     setError('Failed to load prototype preview');
     // If we have files, fall back to Sandpack
     if (prototypeFiles && Object.keys(prototypeFiles).length > 0) {
+      console.log('Falling back to Sandpack after iframe load error');
       setUsingFallback(true);
     } else {
       setLoading(false);
@@ -298,6 +340,11 @@ export function PreviewWindow({
           </div>
           <Skeleton className="h-6 w-48 mb-4 mx-auto" />
           <p className="text-muted-foreground">{getLoadingMessage()}</p>
+          {lastPolledAt && (
+            <p className="text-xs text-muted-foreground mt-2">
+              Last checked: {lastPolledAt.toLocaleTimeString()}
+            </p>
+          )}
         </div>
       </div>
     );
@@ -308,8 +355,8 @@ export function PreviewWindow({
     const processedFiles = sandpackFiles();
     const entryFile = getEntryFile();
     
-    console.log('Using Sandpack fallback with files:', Object.keys(prototypeFiles));
-    console.log('Entry file:', entryFile);
+    console.log('Rendering Sandpack fallback view with files:', Object.keys(prototypeFiles));
+    console.log('Using entry file:', entryFile);
     
     return (
       <div className={`w-full h-full ${className}`}>
@@ -364,6 +411,10 @@ export function PreviewWindow({
   return (
     <div className={`flex flex-col items-center justify-center w-full h-full bg-muted/20 ${className}`}>
       <p className="text-muted-foreground">Preview unavailable</p>
+      <p className="text-xs text-muted-foreground mt-2">
+        Status: {status}, URL: {url ? 'set' : 'not set'}, 
+        Files: {prototypeFiles ? Object.keys(prototypeFiles).length : 0}
+      </p>
     </div>
   );
 }

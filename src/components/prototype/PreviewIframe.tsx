@@ -42,6 +42,17 @@ export function PreviewIframe({
         const iframeDoc = iframeRef.current.contentDocument || 
                         (iframeRef.current.contentWindow && iframeRef.current.contentWindow.document);
         
+        // Log the access attempt for debugging
+        console.log('PreviewIframe: Accessing iframe content:', 
+          iframeDoc ? 'iframe document accessible' : 'iframe document not accessible');
+        
+        if (iframeDoc && iframeDoc.body) {
+          console.log('PreviewIframe: Body accessible:', 
+            iframeDoc.body ? 'yes' : 'no');
+          console.log('PreviewIframe: Body has content:', 
+            iframeDoc.body.innerHTML ? 'yes' : 'no');
+        }
+        
         if (iframeDoc && iframeDoc.body && iframeDoc.body.innerHTML) {
           console.log('PreviewIframe: Content loaded successfully');
           setLoaded(true);
@@ -52,6 +63,7 @@ export function PreviewIframe({
           console.warn(`Preview iframe loaded with no content. Retrying (${retryCount.current}/${maxRetries})...`);
           setTimeout(() => {
             if (iframeRef.current) {
+              console.log('PreviewIframe: Retrying with URL:', url);
               iframeRef.current.src = url;
             }
           }, 1000);
@@ -61,7 +73,8 @@ export function PreviewIframe({
         }
       } catch (e) {
         // Cross-origin issues can cause this to fail but the iframe might still work
-        console.warn("Could not access iframe content due to cross-origin policy, but preview may still work");
+        console.warn("Could not access iframe content due to cross-origin policy:", e);
+        console.log("PreviewIframe: Continuing anyway as the preview may still work");
         setLoaded(true);
         if (onLoad) onLoad();
       }
@@ -75,10 +88,12 @@ export function PreviewIframe({
       console.warn(`Preview iframe failed to load. Retrying (${retryCount.current}/${maxRetries})...`);
       setTimeout(() => {
         if (iframeRef.current) {
+          console.log('PreviewIframe: Retrying after error with URL:', url);
           iframeRef.current.src = url;
         }
       }, 1000);
     } else {
+      console.error('PreviewIframe: Max retries reached, showing error state');
       setError(true);
       if (onError) onError();
     }
@@ -93,6 +108,9 @@ export function PreviewIframe({
           <p className="text-muted-foreground text-center max-w-md">
             The preview couldn't be loaded. This might be due to network issues or 
             security restrictions.
+          </p>
+          <p className="text-sm text-muted-foreground mt-4">
+            URL attempted: {url}
           </p>
         </div>
       )}

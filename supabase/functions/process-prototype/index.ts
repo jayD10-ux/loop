@@ -19,13 +19,14 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Process-prototype function triggered');
+    console.log('Process-prototype function triggered at', new Date().toISOString());
     
     // Get the request body
     const { prototypeId } = await req.json()
     console.log('Processing prototype with ID:', prototypeId);
 
     if (!prototypeId) {
+      console.error('No prototypeId provided in request');
       return new Response(
         JSON.stringify({ error: 'prototypeId is required' }),
         {
@@ -50,6 +51,7 @@ serve(async (req) => {
       )
     }
 
+    console.log('Creating Supabase client with URL:', supabaseUrl);
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
     // Check if storage buckets exist and create them if they don't
@@ -69,6 +71,9 @@ serve(async (req) => {
           .createBucket('prototype-uploads', {
             public: false,
           });
+        console.log('prototype-uploads bucket created successfully');
+      } else {
+        console.log('prototype-uploads bucket already exists');
       }
       
       // Try to get prototype-deployments bucket
@@ -84,6 +89,9 @@ serve(async (req) => {
           .createBucket('prototype-deployments', {
             public: true,
           });
+        console.log('prototype-deployments bucket created successfully');
+      } else {
+        console.log('prototype-deployments bucket already exists');
       }
     } catch (error) {
       console.error('Error checking or creating buckets:', error);
@@ -108,6 +116,13 @@ serve(async (req) => {
         }
       )
     }
+
+    console.log('Retrieved prototype:', {
+      id: prototype.id,
+      name: prototype.name,
+      file_path: prototype.file_path,
+      deployment_status: prototype.deployment_status,
+    });
 
     if (!prototype.file_path) {
       console.error('No file path found in prototype record');
@@ -146,6 +161,7 @@ serve(async (req) => {
       )
     }
 
+    console.log('File downloaded successfully, size:', fileData.size, 'bytes');
     const deploymentPath = `prototype-deployments/${prototypeId}`
     const isZip = prototype.file_path.toLowerCase().endsWith('.zip')
 
@@ -155,13 +171,16 @@ serve(async (req) => {
         console.log('Processing ZIP file');
         // Create a temporary directory to extract files
         const tempDir = await Deno.makeTempDir()
+        console.log('Created temp directory:', tempDir);
         
         // Write the zip file to temp directory
         const zipPath = `${tempDir}/prototype.zip`
         await Deno.writeFile(zipPath, new Uint8Array(await fileData.arrayBuffer()))
+        console.log('Wrote ZIP file to temp directory');
         
         // Extract the zip file
         await extract(zipPath, tempDir)
+        console.log('Extracted ZIP file to temp directory');
         
         // Find all files in the extracted directory
         const walkEntries = []
@@ -171,37 +190,49 @@ serve(async (req) => {
           }
         }
         
-        console.log('Files extracted:', walkEntries.map(e => e.name));
+        console.log('Files extracted:', walkEntries.map(e => e.name).join(', '));
         
         // Upload each file to the prototype-deployments/{prototypeId} folder
         for (const entry of walkEntries) {
           if (entry.isFile) {
             const fileContent = await Deno.readFile(`${tempDir}/${entry.name}`)
             console.log('Uploading file to deployments:', `${prototypeId}/${entry.name}`);
-            await supabase
+            const { error: uploadError } = await supabase
               .storage
               .from('prototype-deployments')
               .upload(`${prototypeId}/${entry.name}`, fileContent, {
                 contentType: getContentType(entry.name),
                 upsert: true,
               })
+              
+            if (uploadError) {
+              console.error(`Error uploading ${entry.name}:`, uploadError);
+            } else {
+              console.log(`Successfully uploaded ${entry.name}`);
+            }
           } else if (entry.isDirectory) {
             // Handle subdirectories recursively
+            console.log(`Processing subdirectory: ${entry.name}`);
             await uploadDirectory(supabase, `${tempDir}/${entry.name}`, `${prototypeId}/${entry.name}`)
           }
         }
         
         // Clean up temp directory
+        console.log('Cleaning up temp directory');
         await Deno.remove(tempDir, { recursive: true })
       } catch (error) {
         console.error('Failed to process ZIP file:', error);
         // Update prototype with failed status
-        await supabase
+        const { error: updateError } = await supabase
           .from('prototypes')
           .update({
             deployment_status: 'failed',
           })
           .eq('id', prototypeId)
+          
+        if (updateError) {
+          console.error('Failed to update prototype with failed status:', updateError);
+        }
 
         return new Response(
           JSON.stringify({ error: 'Failed to process ZIP file', details: error.message }),
@@ -215,23 +246,33 @@ serve(async (req) => {
       // Handle single HTML file
       try {
         console.log('Processing single HTML file');
-        await supabase
+        const { error: uploadError } = await supabase
           .storage
           .from('prototype-deployments')
           .upload(`${prototypeId}/index.html`, fileData, {
             contentType: 'text/html',
             upsert: true,
           })
+          
+        if (uploadError) {
+          console.error('Failed to upload HTML file:', uploadError);
+          throw uploadError;
+        }
+        
         console.log('HTML file uploaded to deployments path:', `${prototypeId}/index.html`);
       } catch (error) {
         console.error('Failed to upload HTML file:', error);
         // Update prototype with failed status
-        await supabase
+        const { error: updateError } = await supabase
           .from('prototypes')
           .update({
             deployment_status: 'failed',
           })
           .eq('id', prototypeId)
+          
+        if (updateError) {
+          console.error('Failed to update prototype with failed status:', updateError);
+        }
 
         return new Response(
           JSON.stringify({ error: 'Failed to upload HTML file', details: error.message }),
@@ -245,20 +286,28 @@ serve(async (req) => {
 
     // Get the public URL for the deployment
     console.log('Getting public URL');
-    const { data: publicUrlData } = await supabase
+    const { data: publicUrlData, error: urlError } = await supabase
       .storage
       .from('prototype-deployments')
       .getPublicUrl(`${prototypeId}/index.html`)
 
+    if (urlError) {
+      console.error('Failed to get public URL:', urlError);
+    }
+
     if (!publicUrlData || !publicUrlData.publicUrl) {
-      console.error('Failed to get public URL');
+      console.error('Failed to get public URL, data:', publicUrlData);
       // Update prototype with failed status
-      await supabase
+      const { error: updateError } = await supabase
         .from('prototypes')
         .update({
           deployment_status: 'failed',
         })
         .eq('id', prototypeId)
+        
+      if (updateError) {
+        console.error('Failed to update prototype with failed status:', updateError);
+      }
 
       return new Response(
         JSON.stringify({ error: 'Failed to get public URL' }),
@@ -325,13 +374,19 @@ async function uploadDirectory(supabase, localPath, remotePath) {
     if (entry.isFile) {
       const fileContent = await Deno.readFile(entryPath)
       console.log('Uploading file:', remoteEntryPath);
-      await supabase
+      const { error } = await supabase
         .storage
         .from('prototype-deployments')
         .upload(remoteEntryPath, fileContent, {
           contentType: getContentType(entry.name),
           upsert: true,
         })
+        
+      if (error) {
+        console.error(`Error uploading ${remoteEntryPath}:`, error);
+      } else {
+        console.log(`Successfully uploaded ${remoteEntryPath}`);
+      }
     } else if (entry.isDirectory) {
       await uploadDirectory(supabase, entryPath, remoteEntryPath)
     }
