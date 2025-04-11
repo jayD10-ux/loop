@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircle } from 'lucide-react';
@@ -161,29 +160,23 @@ export function PreviewWindow({
             
             console.log('Files data fetched:', filesData);
             
-            // Handle files data safely - filesData is the data object, not an error
+            // Handle files data safely
             if (filesData && typeof filesData === 'object') {
-              // Check if 'files' property exists to handle the TypeScript error
-              if ('files' in filesData) {
-                const filesContent = filesData.files;
-                
-                if (filesContent) {
-                  const typedFiles = convertFilesToTypedFormat(filesContent);
-                  if (Object.keys(typedFiles).length > 0) {
-                    setPrototypeFiles(typedFiles);
-                    setUsingFallback(true);
-                    setLoading(false);
-                  } else {
-                    throw new Error('No valid files found for this prototype');
-                  }
+              // Check if 'files' property exists before accessing it
+              if ('files' in filesData && filesData.files) {
+                const typedFiles = convertFilesToTypedFormat(filesData.files);
+                if (Object.keys(typedFiles).length > 0) {
+                  setPrototypeFiles(typedFiles);
+                  setUsingFallback(true);
+                  setLoading(false);
                 } else {
-                  throw new Error('Files property is empty in prototype data');
+                  throw new Error('No valid files found for this prototype');
                 }
               } else {
-                throw new Error('No files property found in prototype data');
+                throw new Error('Files property is empty or missing in prototype data');
               }
             } else {
-              throw new Error('No valid files found for this prototype');
+              throw new Error('Invalid response format for prototype data');
             }
             
             return;
@@ -195,15 +188,17 @@ export function PreviewWindow({
         if (!prototypeData) throw new Error('Prototype not found');
         
         console.log('Processing prototype data:', prototypeData);
-        console.log('Raw files data type:', typeof prototypeData.files);
-        console.log('Raw files data sample:', 
-          typeof prototypeData.files === 'object' 
-            ? Object.keys(prototypeData.files).slice(0, 3) 
-            : String(prototypeData.files).substring(0, 100)
-        );
+        
+        // Safely check if files property exists and has a value
+        if ('files' in prototypeData && prototypeData.files) {
+          console.log('Raw files data type:', typeof prototypeData.files);
+          console.log('Raw files data sample:', 
+            typeof prototypeData.files === 'object' 
+              ? Object.keys(prototypeData.files).slice(0, 3) 
+              : String(prototypeData.files).substring(0, 100)
+          );
 
-        // Update files if not already set and files exists
-        if (prototypeData && 'files' in prototypeData && prototypeData.files) {
+          // Update files if not already set
           if (!prototypeFiles || Object.keys(prototypeFiles).length === 0) {
             const typedFiles = convertFilesToTypedFormat(prototypeData.files);
             console.log('Setting prototype files with', Object.keys(typedFiles).length, 'files');
@@ -212,8 +207,7 @@ export function PreviewWindow({
         }
 
         // If deployment columns exist and have values
-        if (prototypeData && 
-            'deployment_status' in prototypeData && 
+        if ('deployment_status' in prototypeData && 
             'deployment_url' in prototypeData) {
           
           const deployStatus = prototypeData.deployment_status as string;
@@ -232,7 +226,7 @@ export function PreviewWindow({
             setStatus('failed');
             
             // If we have files, we can still show a preview with Sandpack
-            if (prototypeData && 'files' in prototypeData && prototypeData.files) {
+            if ('files' in prototypeData && prototypeData.files) {
               const typedFiles = convertFilesToTypedFormat(prototypeData.files);
               if (Object.keys(typedFiles).length > 0) {
                 console.log('Using Sandpack fallback due to deployment failure');
@@ -257,7 +251,7 @@ export function PreviewWindow({
         } else if (prototypeData) {
           // Deployment columns don't exist, use Sandpack fallback
           console.log('No deployment columns found, using Sandpack fallback');
-          // Check if the prototype data has files property and it's not null or undefined
+          // Check if the prototype data has files property
           if ('files' in prototypeData && prototypeData.files) {
             const typedFiles = convertFilesToTypedFormat(prototypeData.files);
             if (Object.keys(typedFiles).length > 0) {
