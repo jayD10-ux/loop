@@ -221,7 +221,7 @@ export function PreviewWindow({
             setStatus('failed');
             
             // If we have files, we can still show a preview with Sandpack
-            if (prototypeData && 'files' in prototypeData) {
+            if (prototypeData && 'files' in prototypeData && prototypeData.files) {
               const typedFiles = convertFilesToTypedFormat(prototypeData.files);
               if (Object.keys(typedFiles).length > 0) {
                 console.log('Using Sandpack fallback due to deployment failure');
@@ -246,7 +246,8 @@ export function PreviewWindow({
         } else if (prototypeData) {
           // Deployment columns don't exist, use Sandpack fallback
           console.log('No deployment columns found, using Sandpack fallback');
-          if ('files' in prototypeData) {
+          // Check if the prototype data has files property and it's not null or undefined
+          if ('files' in prototypeData && prototypeData.files) {
             const typedFiles = convertFilesToTypedFormat(prototypeData.files);
             if (Object.keys(typedFiles).length > 0) {
               setPrototypeFiles(typedFiles);
