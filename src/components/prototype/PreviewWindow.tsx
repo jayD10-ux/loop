@@ -70,25 +70,34 @@ export function PreviewWindow({
           }
         }
 
+        // TypeScript safety: Now we know data exists and is not an error
         if (data) {
+          // Use type assertion to help TypeScript understand the data structure
+          const prototypeData = data as {
+            preview_url?: string;
+            deployment_status?: 'pending' | 'deployed' | 'failed';
+            deployment_url?: string;
+            files?: Record<string, string>;
+          };
+
           // First priority: check if there's a preview URL
-          if (data.preview_url) {
-            setIframeUrl(data.preview_url);
+          if (prototypeData.preview_url) {
+            setIframeUrl(prototypeData.preview_url);
             setIsLoading(false);
             return;
           }
           
           // Second priority: check deployment status and URL
-          if (data.deployment_status === 'deployed' && data.deployment_url) {
-            setIframeUrl(data.deployment_url);
+          if (prototypeData.deployment_status === 'deployed' && prototypeData.deployment_url) {
+            setIframeUrl(prototypeData.deployment_url);
             setIsLoading(false);
-          } else if (data.deployment_status === 'pending') {
+          } else if (prototypeData.deployment_status === 'pending') {
             setLoadingMessage("Prototype deployment in progress...");
             // Continue checking status
-          } else if (data.deployment_status === 'failed') {
+          } else if (prototypeData.deployment_status === 'failed') {
             setError("Deployment failed. Please try again.");
             setIsLoading(false);
-          } else if (typeof data.files === 'object' && Object.keys(data.files).length > 0) {
+          } else if (prototypeData.files && typeof prototypeData.files === 'object' && Object.keys(prototypeData.files).length > 0) {
             // If no deployment but has files, we can set up for in-browser display
             setIframeUrl(null); // We'll use the files directly
             setIsLoading(false);
