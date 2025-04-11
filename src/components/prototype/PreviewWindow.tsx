@@ -27,12 +27,13 @@ export function PreviewWindow({
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [usingFallback, setUsingFallback] = useState(false);
+  const [prototypeFiles, setPrototypeFiles] = useState<Record<string, string> | null>(files || null);
 
   // Process files for Sandpack if available
   const sandpackFiles = useCallback(() => {
-    if (!files || Object.keys(files).length === 0) return null;
+    if (!prototypeFiles || Object.keys(prototypeFiles).length === 0) return null;
     
-    return Object.entries(files).reduce(
+    return Object.entries(prototypeFiles).reduce(
       (acc, [path, content]) => {
         const sandpackPath = path.startsWith('/') ? path.substring(1) : path;
         return {
@@ -42,11 +43,11 @@ export function PreviewWindow({
       },
       {}
     );
-  }, [files]);
+  }, [prototypeFiles]);
 
   // Determine entry file for Sandpack
   const getEntryFile = useCallback(() => {
-    if (!files) return "index.html";
+    if (!prototypeFiles) return "index.html";
     
     const processedFiles = sandpackFiles();
     if (!processedFiles) return "index.html";
@@ -59,7 +60,7 @@ export function PreviewWindow({
            fileKeys.find(file => file === "index.js") ||
            fileKeys[0] ||
            "index.html";
-  }, [files, sandpackFiles]);
+  }, [prototypeFiles, sandpackFiles]);
 
   // Poll for updates when status is pending
   useEffect(() => {
@@ -69,7 +70,7 @@ export function PreviewWindow({
     }
 
     // If we have files, we can use Sandpack as fallback
-    if (files && Object.keys(files).length > 0) {
+    if (prototypeFiles && Object.keys(prototypeFiles).length > 0) {
       setUsingFallback(true);
       setLoading(false);
       return;
@@ -77,40 +78,93 @@ export function PreviewWindow({
 
     const checkDeploymentStatus = async () => {
       try {
-        const { data, error } = await supabase
+        const { data, error: fetchError } = await supabase
           .from('prototypes')
-          .select('deployment_status, deployment_url, files')
+          .select('files, deployment_status, deployment_url')
           .eq('id', prototypeId)
           .single();
 
-        if (error) throw new Error(error.message);
+        if (fetchError) {
+          // Check if the error is due to missing columns
+          if (fetchError.message.includes('column') && 
+              fetchError.message.includes('does not exist')) {
+            
+            // Fall back to just fetching files if deployment columns don't exist
+            const { data: filesData, error: filesError } = await supabase
+              .from('prototypes')
+              .select('files')
+              .eq('id', prototypeId)
+              .single();
+              
+            if (filesError) throw new Error(filesError.message);
+            if (!filesData) throw new Error('Prototype not found');
+            
+            // We have files but no deployment info yet
+            if (filesData.files && Object.keys(filesData.files).length > 0) {
+              setPrototypeFiles(filesData.files);
+              setUsingFallback(true);
+              setLoading(false);
+            } else {
+              throw new Error('No files found for this prototype');
+            }
+            
+            return;
+          } else {
+            throw new Error(fetchError.message);
+          }
+        }
+
         if (!data) throw new Error('Prototype not found');
 
-        if (data.deployment_status === 'deployed' && data.deployment_url) {
-          setStatus('deployed');
-          setUrl(data.deployment_url);
-          setLoading(false);
-        } else if (data.deployment_status === 'failed') {
-          setStatus('failed');
-          
-          // If we have files, we can still show a preview with Sandpack
+        // Update files if not already set
+        if (data.files && (!prototypeFiles || Object.keys(prototypeFiles).length === 0)) {
+          setPrototypeFiles(data.files);
+        }
+
+        // If deployment columns exist and have values
+        if ('deployment_status' in data && 'deployment_url' in data) {
+          if (data.deployment_status === 'deployed' && data.deployment_url) {
+            setStatus('deployed');
+            setUrl(data.deployment_url);
+            setLoading(false);
+          } else if (data.deployment_status === 'failed') {
+            setStatus('failed');
+            
+            // If we have files, we can still show a preview with Sandpack
+            if (data.files && Object.keys(data.files).length > 0) {
+              setUsingFallback(true);
+              setLoading(false);
+            } else {
+              setError('Deployment failed. Please try again later.');
+              setLoading(false);
+            }
+          } else {
+            // Still pending, continue polling
+            setStatus('pending');
+            // Increment retry count to show different messages
+            setRetryCount(prev => prev + 1);
+          }
+        } else {
+          // Deployment columns don't exist, use Sandpack fallback
           if (data.files && Object.keys(data.files).length > 0) {
             setUsingFallback(true);
             setLoading(false);
           } else {
-            setError('Deployment failed. Please try again later.');
+            setError('No files found for this prototype');
             setLoading(false);
           }
-        } else {
-          // Still pending, continue polling
-          setStatus('pending');
-          // Increment retry count to show different messages
-          setRetryCount(prev => prev + 1);
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Error checking deployment status:', err);
         setError('Failed to check deployment status');
-        setLoading(false);
+        
+        // Try to use local files as fallback if available
+        if (prototypeFiles && Object.keys(prototypeFiles).length > 0) {
+          setUsingFallback(true);
+          setLoading(false);
+        } else {
+          setLoading(false);
+        }
       }
     };
 
@@ -126,7 +180,7 @@ export function PreviewWindow({
     checkDeploymentStatus();
 
     return () => clearInterval(pollingInterval);
-  }, [prototypeId, status, url, files]);
+  }, [prototypeId, status, url, prototypeFiles]);
 
   const getLoadingMessage = () => {
     const messages = [
@@ -145,7 +199,7 @@ export function PreviewWindow({
   const handleIframeError = () => {
     setError('Failed to load prototype preview');
     // If we have files, fall back to Sandpack
-    if (files && Object.keys(files).length > 0) {
+    if (prototypeFiles && Object.keys(prototypeFiles).length > 0) {
       setUsingFallback(true);
     } else {
       setLoading(false);
@@ -182,7 +236,7 @@ export function PreviewWindow({
   }
 
   // Use Sandpack as fallback if we have files but no deployment URL
-  if (usingFallback && files && Object.keys(files).length > 0) {
+  if (usingFallback && prototypeFiles && Object.keys(prototypeFiles).length > 0) {
     const processedFiles = sandpackFiles();
     const entryFile = getEntryFile();
     
