@@ -1,3 +1,4 @@
+
 -- Add deployment fields to prototypes table
 ALTER TABLE prototypes
 ADD COLUMN IF NOT EXISTS deployment_status TEXT CHECK (deployment_status IN ('pending', 'deployed', 'failed')),

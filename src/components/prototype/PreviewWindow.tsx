@@ -14,6 +14,14 @@ interface PreviewWindowProps {
   className?: string;
 }
 
+type PrototypeData = {
+  id: string;
+  files: Record<string, any>;
+  deployment_status?: string;
+  deployment_url?: string;
+  file_path?: string;
+}
+
 export function PreviewWindow({
   prototypeId,
   deploymentStatus: initialStatus,
@@ -62,6 +70,19 @@ export function PreviewWindow({
            "index.html";
   }, [prototypeFiles, sandpackFiles]);
 
+  // Function to convert database files to typesafe format
+  const convertFilesToTypedFormat = (filesObj: Record<string, any>): Record<string, string> => {
+    const typedFiles: Record<string, string> = {};
+    if (filesObj && typeof filesObj === 'object') {
+      Object.entries(filesObj).forEach(([key, value]) => {
+        if (typeof value === 'string') {
+          typedFiles[key] = value;
+        }
+      });
+    }
+    return typedFiles;
+  };
+
   // Poll for updates when status is pending
   useEffect(() => {
     if (status === 'deployed' && url) {
@@ -79,7 +100,7 @@ export function PreviewWindow({
     const checkDeploymentStatus = async () => {
       try {
         // First, try to get all columns including deployment status
-        const { data, error: fetchError } = await supabase
+        const { data: prototypeData, error: fetchError } = await supabase
           .from('prototypes')
           .select('files, deployment_status, deployment_url')
           .eq('id', prototypeId)
@@ -100,19 +121,16 @@ export function PreviewWindow({
             if (filesError) throw new Error(filesError.message);
             if (!filesData) throw new Error('Prototype not found');
             
-            // Check if the files object exists and is valid
-            if (filesData.files && typeof filesData.files === 'object') {
-              // Convert the files object to the expected Record<string, string> format
-              const typedFiles: Record<string, string> = {};
-              Object.entries(filesData.files as Record<string, any>).forEach(([key, value]) => {
-                if (typeof value === 'string') {
-                  typedFiles[key] = value;
-                }
-              });
-              
-              setPrototypeFiles(typedFiles);
-              setUsingFallback(true);
-              setLoading(false);
+            // Handle files data safely
+            if (filesData && 'files' in filesData && filesData.files) {
+              const typedFiles = convertFilesToTypedFormat(filesData.files);
+              if (Object.keys(typedFiles).length > 0) {
+                setPrototypeFiles(typedFiles);
+                setUsingFallback(true);
+                setLoading(false);
+              } else {
+                throw new Error('No valid files found for this prototype');
+              }
             } else {
               throw new Error('No valid files found for this prototype');
             }
@@ -123,24 +141,23 @@ export function PreviewWindow({
           }
         }
 
-        if (!data) throw new Error('Prototype not found');
+        if (!prototypeData) throw new Error('Prototype not found');
 
-        // Update files if not already set
-        if (data && data.files && (!prototypeFiles || Object.keys(prototypeFiles).length === 0)) {
-          // Convert the files object to the expected Record<string, string> format
-          const typedFiles: Record<string, string> = {};
-          Object.entries(data.files as Record<string, any>).forEach(([key, value]) => {
-            if (typeof value === 'string') {
-              typedFiles[key] = value;
-            }
-          });
-          setPrototypeFiles(typedFiles);
+        // Update files if not already set and files exists
+        if (prototypeData && 'files' in prototypeData && prototypeData.files) {
+          if (!prototypeFiles || Object.keys(prototypeFiles).length === 0) {
+            const typedFiles = convertFilesToTypedFormat(prototypeData.files);
+            setPrototypeFiles(typedFiles);
+          }
         }
 
         // If deployment columns exist and have values
-        if (data && 'deployment_status' in data && 'deployment_url' in data) {
-          const deployStatus = data.deployment_status as string;
-          const deployUrl = data.deployment_url as string;
+        if (prototypeData && 
+            'deployment_status' in prototypeData && 
+            'deployment_url' in prototypeData) {
+          
+          const deployStatus = prototypeData.deployment_status as string;
+          const deployUrl = prototypeData.deployment_url as string;
           
           if (deployStatus === 'deployed' && deployUrl) {
             setStatus('deployed');
@@ -150,7 +167,8 @@ export function PreviewWindow({
             setStatus('failed');
             
             // If we have files, we can still show a preview with Sandpack
-            if (data && data.files && typeof data.files === 'object') {
+            if (prototypeData && 'files' in prototypeData && prototypeData.files && 
+                typeof prototypeData.files === 'object') {
               setUsingFallback(true);
               setLoading(false);
             } else {
@@ -163,9 +181,10 @@ export function PreviewWindow({
             // Increment retry count to show different messages
             setRetryCount(prev => prev + 1);
           }
-        } else if (data) {
+        } else if (prototypeData) {
           // Deployment columns don't exist, use Sandpack fallback
-          if (data.files && typeof data.files === 'object') {
+          if ('files' in prototypeData && prototypeData.files && 
+              typeof prototypeData.files === 'object') {
             setUsingFallback(true);
             setLoading(false);
           } else {
