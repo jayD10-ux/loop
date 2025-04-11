@@ -108,15 +108,17 @@ export function PrototypeUploader({
       setUploadProgress(75);
       console.log('Prototype record created successfully');
       
+      const origin = window.location.origin;
+      console.log('Current origin:', origin);
+      
       console.log('Triggering edge function to process prototype');
-      const functionUrl = `${supabase.supabaseUrl}/functions/v1/process-prototype`;
+      const functionUrl = `${origin}/.netlify/edge-functions/process-prototype`;
       console.log('Edge function URL:', functionUrl);
       
       const response = await fetch(functionUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabase.supabaseKey}`,
         },
         body: JSON.stringify({ prototypeId }),
       });

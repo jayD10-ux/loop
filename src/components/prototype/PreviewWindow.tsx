@@ -144,7 +144,7 @@ export function PreviewWindow({
 
         if (fetchError) {
           // Check if the error is due to missing columns
-          if (fetchError.message.includes('column') && 
+          if (fetchError.message && fetchError.message.includes('column') && 
               fetchError.message.includes('does not exist')) {
             
             console.log('Column does not exist, fetching just files');
@@ -161,7 +161,7 @@ export function PreviewWindow({
             
             console.log('Files data fetched:', filesData);
             
-            // Handle files data safely
+            // Handle files data safely - filesData is the data object, not an error
             if (filesData && 'files' in filesData) {
               const typedFiles = convertFilesToTypedFormat(filesData.files);
               if (Object.keys(typedFiles).length > 0) {
