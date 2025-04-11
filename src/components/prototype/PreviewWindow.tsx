@@ -78,6 +78,7 @@ export function PreviewWindow({
 
     const checkDeploymentStatus = async () => {
       try {
+        // First, try to get all columns including deployment status
         const { data, error: fetchError } = await supabase
           .from('prototypes')
           .select('files, deployment_status, deployment_url')
@@ -99,13 +100,21 @@ export function PreviewWindow({
             if (filesError) throw new Error(filesError.message);
             if (!filesData) throw new Error('Prototype not found');
             
-            // We have files but no deployment info yet
-            if (filesData.files && Object.keys(filesData.files).length > 0) {
-              setPrototypeFiles(filesData.files);
+            // Check if the files object exists and is valid
+            if (filesData.files && typeof filesData.files === 'object') {
+              // Convert the files object to the expected Record<string, string> format
+              const typedFiles: Record<string, string> = {};
+              Object.entries(filesData.files as Record<string, any>).forEach(([key, value]) => {
+                if (typeof value === 'string') {
+                  typedFiles[key] = value;
+                }
+              });
+              
+              setPrototypeFiles(typedFiles);
               setUsingFallback(true);
               setLoading(false);
             } else {
-              throw new Error('No files found for this prototype');
+              throw new Error('No valid files found for this prototype');
             }
             
             return;
@@ -118,20 +127,30 @@ export function PreviewWindow({
 
         // Update files if not already set
         if (data.files && (!prototypeFiles || Object.keys(prototypeFiles).length === 0)) {
-          setPrototypeFiles(data.files);
+          // Convert the files object to the expected Record<string, string> format
+          const typedFiles: Record<string, string> = {};
+          Object.entries(data.files as Record<string, any>).forEach(([key, value]) => {
+            if (typeof value === 'string') {
+              typedFiles[key] = value;
+            }
+          });
+          setPrototypeFiles(typedFiles);
         }
 
         // If deployment columns exist and have values
         if ('deployment_status' in data && 'deployment_url' in data) {
-          if (data.deployment_status === 'deployed' && data.deployment_url) {
+          const deployStatus = data.deployment_status as string;
+          const deployUrl = data.deployment_url as string;
+          
+          if (deployStatus === 'deployed' && deployUrl) {
             setStatus('deployed');
-            setUrl(data.deployment_url);
+            setUrl(deployUrl);
             setLoading(false);
-          } else if (data.deployment_status === 'failed') {
+          } else if (deployStatus === 'failed') {
             setStatus('failed');
             
             // If we have files, we can still show a preview with Sandpack
-            if (data.files && Object.keys(data.files).length > 0) {
+            if (data.files && typeof data.files === 'object') {
               setUsingFallback(true);
               setLoading(false);
             } else {
@@ -146,7 +165,7 @@ export function PreviewWindow({
           }
         } else {
           // Deployment columns don't exist, use Sandpack fallback
-          if (data.files && Object.keys(data.files).length > 0) {
+          if (data.files && typeof data.files === 'object') {
             setUsingFallback(true);
             setLoading(false);
           } else {
