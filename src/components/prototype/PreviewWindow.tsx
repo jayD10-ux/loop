@@ -71,15 +71,18 @@ export function PreviewWindow({
   }, [prototypeFiles, sandpackFiles]);
 
   // Function to convert database files to typesafe format
-  const convertFilesToTypedFormat = (filesObj: Record<string, any>): Record<string, string> => {
+  const convertFilesToTypedFormat = (filesObj: Record<string, any> | string | number | boolean | null | any[]): Record<string, string> => {
     const typedFiles: Record<string, string> = {};
-    if (filesObj && typeof filesObj === 'object') {
+    
+    // Check if filesObj is a proper object (not null, array, or primitive)
+    if (filesObj && typeof filesObj === 'object' && !Array.isArray(filesObj)) {
       Object.entries(filesObj).forEach(([key, value]) => {
         if (typeof value === 'string') {
           typedFiles[key] = value;
         }
       });
     }
+    
     return typedFiles;
   };
 
@@ -122,7 +125,7 @@ export function PreviewWindow({
             if (!filesData) throw new Error('Prototype not found');
             
             // Handle files data safely
-            if (filesData && 'files' in filesData && filesData.files) {
+            if (filesData && 'files' in filesData) {
               const typedFiles = convertFilesToTypedFormat(filesData.files);
               if (Object.keys(typedFiles).length > 0) {
                 setPrototypeFiles(typedFiles);
@@ -144,7 +147,7 @@ export function PreviewWindow({
         if (!prototypeData) throw new Error('Prototype not found');
 
         // Update files if not already set and files exists
-        if (prototypeData && 'files' in prototypeData && prototypeData.files) {
+        if (prototypeData && 'files' in prototypeData) {
           if (!prototypeFiles || Object.keys(prototypeFiles).length === 0) {
             const typedFiles = convertFilesToTypedFormat(prototypeData.files);
             setPrototypeFiles(typedFiles);
@@ -167,10 +170,16 @@ export function PreviewWindow({
             setStatus('failed');
             
             // If we have files, we can still show a preview with Sandpack
-            if (prototypeData && 'files' in prototypeData && prototypeData.files && 
-                typeof prototypeData.files === 'object') {
-              setUsingFallback(true);
-              setLoading(false);
+            if (prototypeData && 'files' in prototypeData) {
+              const typedFiles = convertFilesToTypedFormat(prototypeData.files);
+              if (Object.keys(typedFiles).length > 0) {
+                setPrototypeFiles(typedFiles);
+                setUsingFallback(true);
+                setLoading(false);
+              } else {
+                setError('Deployment failed and no valid files found.');
+                setLoading(false);
+              }
             } else {
               setError('Deployment failed. Please try again later.');
               setLoading(false);
@@ -183,10 +192,16 @@ export function PreviewWindow({
           }
         } else if (prototypeData) {
           // Deployment columns don't exist, use Sandpack fallback
-          if ('files' in prototypeData && prototypeData.files && 
-              typeof prototypeData.files === 'object') {
-            setUsingFallback(true);
-            setLoading(false);
+          if ('files' in prototypeData) {
+            const typedFiles = convertFilesToTypedFormat(prototypeData.files);
+            if (Object.keys(typedFiles).length > 0) {
+              setPrototypeFiles(typedFiles);
+              setUsingFallback(true);
+              setLoading(false);
+            } else {
+              setError('No valid files found for this prototype');
+              setLoading(false);
+            }
           } else {
             setError('No files found for this prototype');
             setLoading(false);
