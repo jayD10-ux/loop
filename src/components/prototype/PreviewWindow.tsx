@@ -126,7 +126,7 @@ export function PreviewWindow({
         if (!data) throw new Error('Prototype not found');
 
         // Update files if not already set
-        if (data.files && (!prototypeFiles || Object.keys(prototypeFiles).length === 0)) {
+        if (data && data.files && (!prototypeFiles || Object.keys(prototypeFiles).length === 0)) {
           // Convert the files object to the expected Record<string, string> format
           const typedFiles: Record<string, string> = {};
           Object.entries(data.files as Record<string, any>).forEach(([key, value]) => {
@@ -138,7 +138,7 @@ export function PreviewWindow({
         }
 
         // If deployment columns exist and have values
-        if ('deployment_status' in data && 'deployment_url' in data) {
+        if (data && 'deployment_status' in data && 'deployment_url' in data) {
           const deployStatus = data.deployment_status as string;
           const deployUrl = data.deployment_url as string;
           
@@ -150,7 +150,7 @@ export function PreviewWindow({
             setStatus('failed');
             
             // If we have files, we can still show a preview with Sandpack
-            if (data.files && typeof data.files === 'object') {
+            if (data && data.files && typeof data.files === 'object') {
               setUsingFallback(true);
               setLoading(false);
             } else {
@@ -163,7 +163,7 @@ export function PreviewWindow({
             // Increment retry count to show different messages
             setRetryCount(prev => prev + 1);
           }
-        } else {
+        } else if (data) {
           // Deployment columns don't exist, use Sandpack fallback
           if (data.files && typeof data.files === 'object') {
             setUsingFallback(true);
