@@ -47,39 +47,75 @@ export function useProjects() {
     
     setLoading(true);
     try {
-      // 1. Fetch team memberships if user has teams
-      const { data: teamMemberships, error: teamMembershipsError } = await supabase
-        .from('team_members')
-        .select('team_id')
-        .eq('user_id', userId);
+      console.log('Fetching data for user ID:', userId);
+      
+      // Directly query teams the user is a member of
+      const { data: userTeams, error: teamsError } = await supabase.rpc(
+        'get_user_team_memberships',
+        { user_id: userId }
+      ).then(async (result) => {
+        if (result.error) {
+          console.error('Error calling RPC function:', result.error);
+          
+          // Fallback: directly query team memberships if the RPC fails
+          const { data: membershipData, error: membershipError } = await supabase
+            .from('team_members')
+            .select('team_id')
+            .eq('user_id', userId);
+            
+          if (membershipError) {
+            throw new Error(`Failed to fetch team memberships: ${membershipError.message}`);
+          }
+          
+          const teamIds = membershipData?.map(membership => membership.team_id) || [];
+          
+          if (teamIds.length === 0) {
+            return { data: [], error: null };
+          }
+          
+          // Get team details
+          const { data: teamsData, error: teamsFetchError } = await supabase
+            .from('teams')
+            .select('*')
+            .in('id', teamIds);
+            
+          if (teamsFetchError) {
+            throw new Error(`Failed to fetch teams: ${teamsFetchError.message}`);
+          }
+          
+          return { data: teamsData || [], error: null };
+        }
         
-      if (teamMembershipsError) {
-        throw new Error(`Failed to fetch team memberships: ${teamMembershipsError.message}`);
-      }
-      
-      // 2. Get team details if user belongs to any teams
-      const teamIds = teamMemberships?.map(tm => tm.team_id) || [];
-      let userTeams: Team[] = [];
-      
-      if (teamIds.length > 0) {
-        const { data: teamsData, error: teamsError } = await supabase
+        // If RPC worked, get the team details
+        const teamIds = result.data as string[];
+        
+        if (!teamIds || teamIds.length === 0) {
+          return { data: [], error: null };
+        }
+        
+        const { data: teamsData, error: teamsFetchError } = await supabase
           .from('teams')
           .select('*')
           .in('id', teamIds);
           
-        if (teamsError) {
-          throw new Error(`Failed to fetch teams: ${teamsError.message}`);
+        if (teamsFetchError) {
+          throw new Error(`Failed to fetch teams: ${teamsFetchError.message}`);
         }
         
-        userTeams = teamsData || [];
-        
-        // Set active team to first team if not already set
-        if (userTeams.length > 0 && !activeTeamId) {
-          setActiveTeamId(userTeams[0].id);
-        }
+        return { data: teamsData || [], error: null };
+      });
+      
+      if (teamsError) {
+        throw teamsError;
       }
       
+      console.log('User teams:', userTeams);
       setTeams(userTeams);
+      
+      // Set active team to first team if not already set
+      if (userTeams.length > 0 && !activeTeamId) {
+        setActiveTeamId(userTeams[0].id);
+      }
       
       // 3. Fetch projects - both owned by user and by teams user belongs to
       const { data: projectsData, error: projectsError } = await supabase
@@ -90,6 +126,8 @@ export function useProjects() {
         throw new Error(`Failed to fetch projects: ${projectsError.message}`);
       }
       
+      console.log('Projects data:', projectsData);
+      
       // With RLS, we'll only get back the projects the user has access to
       setProjects(
         (projectsData || []).map(p => ({
@@ -97,7 +135,7 @@ export function useProjects() {
           owner_type: p.owner_type as 'user' | 'team'
         }))
       );
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error fetching dashboard data:", error);
       toast({
         title: "Failed to load data",
@@ -110,7 +148,9 @@ export function useProjects() {
   };
   
   useEffect(() => {
-    fetchData();
+    if (userId) {
+      fetchData();
+    }
   }, [userId, activeTeamId]);
   
   // Add refreshProjects function to manually trigger data refresh

@@ -76,30 +76,42 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string
+          deployment_status: string | null
+          deployment_url: string | null
           description: string | null
+          file_path: string | null
           files: Json
           id: string
           name: string
+          preview_url: string | null
           tech_stack: string
           updated_at: string
         }
         Insert: {
           created_at?: string
           created_by: string
+          deployment_status?: string | null
+          deployment_url?: string | null
           description?: string | null
+          file_path?: string | null
           files: Json
           id?: string
           name: string
+          preview_url?: string | null
           tech_stack: string
           updated_at?: string
         }
         Update: {
           created_at?: string
           created_by?: string
+          deployment_status?: string | null
+          deployment_url?: string | null
           description?: string | null
+          file_path?: string | null
           files?: Json
           id?: string
           name?: string
+          preview_url?: string | null
           tech_stack?: string
           updated_at?: string
         }
@@ -231,6 +243,10 @@ export type Database = {
       create_team_invite: {
         Args: { team_id: string; email: string; inviter_id: string }
         Returns: undefined
+      }
+      get_user_team_memberships: {
+        Args: { user_id: string }
+        Returns: string[]
       }
     }
     Enums: {

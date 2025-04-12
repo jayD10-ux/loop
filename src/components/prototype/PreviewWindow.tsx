@@ -36,10 +36,9 @@ export function PreviewWindow({
       }
 
       try {
-        // Determine which columns we need to select
-        let columnsToSelect = 'files';
+        console.log('Fetching prototype data for ID:', prototypeId);
         
-        // Try to fetch prototype data with a progressive approach
+        // Try to fetch prototype data 
         const { data, error } = await supabase
           .from('prototypes')
           .select('deployment_status, deployment_url, preview_url, files')
@@ -47,11 +46,11 @@ export function PreviewWindow({
           .single();
 
         if (error) {
-          // Handle different types of column errors specifically
-          if (error.message.includes("column 'deployment_status' does not exist") || 
-              error.message.includes("column 'preview_url' does not exist")) {
-            
-            // Fall back to fetching just the files
+          console.error("Error fetching prototype:", error);
+          
+          // If the error is related to missing columns, try to fetch just the files
+          if (error.message.includes("does not exist on")) {
+            console.log('Attempting to fetch only files data');
             const { data: fileData, error: fileError } = await supabase
               .from('prototypes')
               .select('files')
@@ -63,7 +62,6 @@ export function PreviewWindow({
               throw fileError;
             }
             
-            // If we have files but no deployment info, prepare for in-browser display
             if (fileData && typeof fileData.files === 'object' && Object.keys(fileData.files).length > 0) {
               setIframeUrl(null);
               setIsLoading(false);
@@ -72,13 +70,14 @@ export function PreviewWindow({
               throw new Error("No preview or files available for this prototype");
             }
           } else {
-            console.error("Error fetching prototype:", error);
             throw error;
           }
         }
 
-        // Process the fetched data
+        // Process the fetched data with proper type checking
         if (data) {
+          console.log('Prototype data retrieved:', data);
+          
           // Use type assertion to help TypeScript understand the data structure
           const prototypeData = data as {
             preview_url?: string;
@@ -89,35 +88,37 @@ export function PreviewWindow({
 
           // Decision tree for preview sources with clear priorities
           if (prototypeData.preview_url) {
-            // First priority: use direct preview URL
+            console.log('Using preview_url:', prototypeData.preview_url);
             setIframeUrl(prototypeData.preview_url);
             setIsLoading(false);
           } 
           else if (prototypeData.deployment_status === 'deployed' && prototypeData.deployment_url) {
-            // Second priority: use deployment URL for deployed prototypes
+            console.log('Using deployment_url:', prototypeData.deployment_url);
             setIframeUrl(prototypeData.deployment_url);
             setIsLoading(false);
           } 
           else if (prototypeData.deployment_status === 'pending') {
-            // Handle pending deployments
+            console.log('Deployment is pending, will poll for updates');
             setLoadingMessage("Prototype deployment in progress...");
             // Continue polling - interval is set up outside this function
           } 
           else if (prototypeData.deployment_status === 'failed') {
-            // Handle failed deployments
+            console.log('Deployment failed');
             setError("Deployment failed. Please try again.");
             setIsLoading(false);
           } 
           else if (prototypeData.files && typeof prototypeData.files === 'object' && Object.keys(prototypeData.files).length > 0) {
-            // Last option: use files directly for in-browser rendering
+            console.log('Using files for in-browser rendering');
             setIframeUrl(null);
             setIsLoading(false);
           } 
           else {
+            console.log('No valid preview source found');
             setError("No preview available for this prototype.");
             setIsLoading(false);
           }
         } else {
+          console.log('No prototype data returned');
           setError("Prototype not found.");
           setIsLoading(false);
         }
@@ -133,11 +134,14 @@ export function PreviewWindow({
 
     // Set up polling for pending deployments
     if ((deploymentStatus === 'pending' || !deploymentStatus) && !deploymentUrl) {
+      console.log('Setting up polling for pending deployment');
       checkStatusInterval.current = window.setInterval(() => {
         retryCount.current += 1;
+        console.log(`Polling for deployment status (${retryCount.current}/30)`);
         
         // Give up after 30 retries (2.5 minutes)
         if (retryCount.current > 30) {
+          console.log('Deployment taking too long, giving up');
           clearInterval(checkStatusInterval.current!);
           setError("Deployment is taking longer than expected. Please check back later.");
           setIsLoading(false);
@@ -150,16 +154,19 @@ export function PreviewWindow({
     // Clean up interval on unmount
     return () => {
       if (checkStatusInterval.current) {
+        console.log('Clearing polling interval');
         clearInterval(checkStatusInterval.current);
       }
     };
   }, [prototypeId, deploymentStatus, deploymentUrl]);
 
   const handleIframeLoad = () => {
+    console.log('Iframe loaded successfully');
     setIsLoading(false);
   };
 
   const handleIframeError = () => {
+    console.error('Iframe failed to load');
     setError("Failed to load preview. The URL might be inaccessible or incorrect.");
     setIsLoading(false);
   };
