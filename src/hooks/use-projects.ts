@@ -68,7 +68,7 @@ export function useProjects() {
       // Call the fixed security definer function for team memberships
       const { data: teamIds, error: teamIdsError } = await supabase.rpc(
         'get_user_team_memberships',
-        { p_user_id: userId }
+        { user_id: userId } // Changed from p_user_id to user_id to match the function parameter
       );
       
       if (teamIdsError) {
