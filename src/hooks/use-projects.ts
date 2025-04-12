@@ -66,20 +66,20 @@ export function useProjects() {
     try {
       console.log('Fetching data for user ID:', userId);
       
-      // Call the fixed security definer function for team memberships
+      // Use the get_user_teams_for_access function to get team IDs
       const { data: teamIds, error: teamIdsError } = await supabase.rpc(
-        'get_user_team_memberships',
-        { user_id: userId } // Changed from p_user_id to user_id to match the function parameter
+        'get_user_teams_for_access',
+        { p_user_id: userId } 
       );
       
       if (teamIdsError) {
-        console.error('Error calling team membership function:', teamIdsError);
-        throw new Error(`Failed to fetch team memberships: ${teamIdsError.message}`);
+        console.error('Error calling team access function:', teamIdsError);
+        throw new Error(`Failed to fetch team access: ${teamIdsError.message}`);
       }
       
       console.log('Team IDs:', teamIds);
       
-      // If user has team memberships, fetch team details
+      // If user has team access, fetch team details
       let userTeams: Team[] = [];
       
       if (teamIds && teamIds.length > 0) {

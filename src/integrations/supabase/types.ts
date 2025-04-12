@@ -248,6 +248,10 @@ export type Database = {
         Args: { user_id: string }
         Returns: string[]
       }
+      get_user_teams_for_access: {
+        Args: { p_user_id: string }
+        Returns: string[]
+      }
     }
     Enums: {
       [_ in never]: never
