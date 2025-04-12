@@ -5,6 +5,7 @@ import { PrototypeGrid } from "@/components/dashboard/PrototypeGrid";
 import { DashboardControls } from "@/components/dashboard/DashboardControls";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { supabase } from "@/integrations/supabase/client";
+import { useProjects } from "@/hooks/use-projects";
 
 // Define the prototype interface
 interface Prototype {
@@ -16,6 +17,10 @@ interface Prototype {
   updated_at: string;
   tech_stack: string;
   files: Record<string, string>;
+  deployment_status?: 'pending' | 'deployed' | 'failed';
+  deployment_url?: string;
+  preview_url?: string;
+  file_path?: string;
 }
 
 const Dashboard = () => {
@@ -63,7 +68,11 @@ const Dashboard = () => {
         created_at: item.created_at,
         updated_at: item.updated_at,
         tech_stack: item.tech_stack || '',
-        files: item.files || {}
+        files: item.files || {},
+        deployment_status: item.deployment_status,
+        deployment_url: item.deployment_url,
+        preview_url: item.preview_url,
+        file_path: item.file_path
       }));
       
       setPrototypes(transformedData);
@@ -77,9 +86,6 @@ const Dashboard = () => {
   useEffect(() => {
     fetchPrototypes();
   }, []);
-
-  // Fix missing import
-  import { useProjects } from "@/hooks/use-projects";
 
   // Combine projects and prototypes for display
   const allItems = [
