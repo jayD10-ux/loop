@@ -1,9 +1,11 @@
 
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, AlertCircle } from "lucide-react";
+import { Loader2, AlertCircle, RefreshCw } from "lucide-react";
 import { Prototype } from "@/types/prototype";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { PreviewIframe } from "./PreviewIframe";
 
 interface PreviewWindowProps {
   prototypeId: string;
@@ -22,118 +24,123 @@ export function PreviewWindow({
   const [isLoading, setIsLoading] = useState(true);
   const [loadingMessage, setLoadingMessage] = useState("Loading preview...");
   const [error, setError] = useState<string | null>(null);
+  const [currentStatus, setCurrentStatus] = useState(deploymentStatus);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const retryCount = useRef(0);
   const checkStatusInterval = useRef<number | null>(null);
 
-  useEffect(() => {
-    const fetchPrototypeStatus = async () => {
-      // If deployment URL is already provided as a prop, use it
-      if (deploymentUrl) {
-        setIframeUrl(deploymentUrl);
-        setIsLoading(false);
-        return;
-      }
+  const fetchPrototypeStatus = async () => {
+    // If deployment URL is already provided as a prop, use it
+    if (deploymentUrl) {
+      setIframeUrl(deploymentUrl);
+      setCurrentStatus('deployed');
+      setIsLoading(false);
+      return;
+    }
 
-      try {
-        console.log('Fetching prototype data for ID:', prototypeId);
+    try {
+      console.log('Fetching prototype data for ID:', prototypeId);
+      
+      // Try to fetch prototype data 
+      const { data, error } = await supabase
+        .from('prototypes')
+        .select('deployment_status, deployment_url, preview_url, files')
+        .eq('id', prototypeId)
+        .single();
+
+      if (error) {
+        console.error("Error fetching prototype:", error);
         
-        // Try to fetch prototype data 
-        const { data, error } = await supabase
-          .from('prototypes')
-          .select('deployment_status, deployment_url, preview_url, files')
-          .eq('id', prototypeId)
-          .single();
-
-        if (error) {
-          console.error("Error fetching prototype:", error);
-          
-          // If the error is related to missing columns, try to fetch just the files
-          if (error.message.includes("does not exist on")) {
-            console.log('Attempting to fetch only files data');
-            const { data: fileData, error: fileError } = await supabase
-              .from('prototypes')
-              .select('files')
-              .eq('id', prototypeId)
-              .single();
-              
-            if (fileError) {
-              console.error("Error fetching prototype files:", fileError);
-              throw fileError;
-            }
+        // If the error is related to missing columns, try to fetch just the files
+        if (error.message.includes("does not exist on")) {
+          console.log('Attempting to fetch only files data');
+          const { data: fileData, error: fileError } = await supabase
+            .from('prototypes')
+            .select('files')
+            .eq('id', prototypeId)
+            .single();
             
-            if (fileData && typeof fileData.files === 'object' && Object.keys(fileData.files).length > 0) {
-              setIframeUrl(null);
-              setIsLoading(false);
-              return;
-            } else {
-              throw new Error("No preview or files available for this prototype");
-            }
-          } else {
-            throw error;
+          if (fileError) {
+            console.error("Error fetching prototype files:", fileError);
+            throw fileError;
           }
-        }
-
-        // Process the fetched data with proper type checking
-        if (data) {
-          console.log('Prototype data retrieved:', data);
           
-          // Use type assertion to help TypeScript understand the data structure
-          const prototypeData = data as {
-            preview_url?: string;
-            deployment_status?: 'pending' | 'deployed' | 'failed';
-            deployment_url?: string;
-            files?: Record<string, string>;
-          };
-
-          // Decision tree for preview sources with clear priorities
-          if (prototypeData.preview_url) {
-            console.log('Using preview_url:', prototypeData.preview_url);
-            setIframeUrl(prototypeData.preview_url);
-            setIsLoading(false);
-          } 
-          else if (prototypeData.deployment_status === 'deployed' && prototypeData.deployment_url) {
-            console.log('Using deployment_url:', prototypeData.deployment_url);
-            setIframeUrl(prototypeData.deployment_url);
-            setIsLoading(false);
-          } 
-          else if (prototypeData.deployment_status === 'pending') {
-            console.log('Deployment is pending, will poll for updates');
-            setLoadingMessage("Prototype deployment in progress...");
-            // Continue polling - interval is set up outside this function
-          } 
-          else if (prototypeData.deployment_status === 'failed') {
-            console.log('Deployment failed');
-            setError("Deployment failed. Please try again.");
-            setIsLoading(false);
-          } 
-          else if (prototypeData.files && typeof prototypeData.files === 'object' && Object.keys(prototypeData.files).length > 0) {
-            console.log('Using files for in-browser rendering');
+          if (fileData && typeof fileData.files === 'object' && Object.keys(fileData.files).length > 0) {
             setIframeUrl(null);
             setIsLoading(false);
-          } 
-          else {
-            console.log('No valid preview source found');
-            setError("No preview available for this prototype.");
-            setIsLoading(false);
+            return;
+          } else {
+            throw new Error("No preview or files available for this prototype");
           }
         } else {
-          console.log('No prototype data returned');
-          setError("Prototype not found.");
+          throw error;
+        }
+      }
+
+      // Process the fetched data with proper type checking
+      if (data) {
+        console.log('Prototype data retrieved:', data);
+        
+        // Use type assertion to help TypeScript understand the data structure
+        const prototypeData = data as {
+          preview_url?: string;
+          deployment_status?: 'pending' | 'deployed' | 'failed';
+          deployment_url?: string;
+          files?: Record<string, string>;
+        };
+
+        // Update current status
+        setCurrentStatus(prototypeData.deployment_status);
+
+        // Decision tree for preview sources with clear priorities
+        if (prototypeData.preview_url) {
+          console.log('Using preview_url:', prototypeData.preview_url);
+          setIframeUrl(prototypeData.preview_url);
+          setIsLoading(false);
+        } 
+        else if (prototypeData.deployment_status === 'deployed' && prototypeData.deployment_url) {
+          console.log('Using deployment_url:', prototypeData.deployment_url);
+          setIframeUrl(prototypeData.deployment_url);
+          setIsLoading(false);
+        } 
+        else if (prototypeData.deployment_status === 'pending') {
+          console.log('Deployment is pending, will poll for updates');
+          setLoadingMessage("Prototype deployment in progress...");
+          // Continue polling - interval is set up outside this function
+        } 
+        else if (prototypeData.deployment_status === 'failed') {
+          console.log('Deployment failed');
+          setError("Deployment failed. Please try again.");
+          setIsLoading(false);
+        } 
+        else if (prototypeData.files && typeof prototypeData.files === 'object' && Object.keys(prototypeData.files).length > 0) {
+          console.log('Using files for in-browser rendering');
+          setIframeUrl(null);
+          setIsLoading(false);
+        } 
+        else {
+          console.log('No valid preview source found');
+          setError("No preview available for this prototype.");
           setIsLoading(false);
         }
-      } catch (err: any) {
-        console.error("Error fetching prototype status:", err);
-        setError(`Error loading preview: ${err.message}`);
+      } else {
+        console.log('No prototype data returned');
+        setError("Prototype not found.");
         setIsLoading(false);
       }
-    };
+    } catch (err: any) {
+      console.error("Error fetching prototype status:", err);
+      setError(`Error loading preview: ${err.message}`);
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     // Initial fetch
     fetchPrototypeStatus();
 
     // Set up polling for pending deployments
-    if ((deploymentStatus === 'pending' || !deploymentStatus) && !deploymentUrl) {
+    if ((currentStatus === 'pending' || !currentStatus) && !deploymentUrl) {
       console.log('Setting up polling for pending deployment');
       checkStatusInterval.current = window.setInterval(() => {
         retryCount.current += 1;
@@ -159,6 +166,13 @@ export function PreviewWindow({
       }
     };
   }, [prototypeId, deploymentStatus, deploymentUrl]);
+
+  const handleRefresh = () => {
+    setIsLoading(true);
+    setError(null);
+    retryCount.current = 0;
+    fetchPrototypeStatus();
+  };
 
   const handleIframeLoad = () => {
     console.log('Iframe loaded successfully');
@@ -190,11 +204,19 @@ export function PreviewWindow({
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center h-full w-full bg-gray-50 p-6">
-        <Alert variant="destructive" className="max-w-md w-full">
+        <Alert variant="destructive" className="max-w-md w-full mb-6">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Preview Error</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
+        <Button 
+          variant="outline" 
+          onClick={handleRefresh}
+          className="flex items-center gap-2"
+        >
+          <RefreshCw className="h-4 w-4" />
+          Try Again
+        </Button>
       </div>
     );
   }
@@ -203,15 +225,10 @@ export function PreviewWindow({
   return (
     <div className="h-full w-full bg-white">
       {iframeUrl ? (
-        <iframe
-          ref={iframeRef}
-          src={iframeUrl}
-          className="w-full h-full border-none"
+        <PreviewIframe
+          url={iframeUrl}
           onLoad={handleIframeLoad}
           onError={handleIframeError}
-          allow="accelerometer; camera; encrypted-media; geolocation; gyroscope; microphone; midi; payment; usb; xr-spatial-tracking"
-          loading="lazy"
-          title="Prototype Preview"
           sandbox="allow-forms allow-modals allow-orientation-lock allow-pointer-lock allow-popups allow-popups-to-escape-sandbox allow-presentation allow-same-origin allow-scripts"
         />
       ) : (

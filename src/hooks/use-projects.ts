@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -25,6 +25,7 @@ export function useProjects() {
   const [loading, setLoading] = useState(true);
   const [activeTeamId, setActiveTeamId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   
   // Sort options
   const [sortBy, setSortBy] = useState<'newest' | 'oldest'>('newest');
@@ -33,8 +34,21 @@ export function useProjects() {
   useEffect(() => {
     // Get user session
     async function getUserId() {
-      const { data: { session } } = await supabase.auth.getSession();
-      return session?.user?.id || null;
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error getting session:', error);
+          setError('Authentication error. Please try logging in again.');
+          return null;
+        }
+        
+        return session?.user?.id || null;
+      } catch (err) {
+        console.error('Unexpected error in getUserId:', err);
+        setError('Authentication error. Please try logging in again.');
+        return null;
+      }
     }
     
     getUserId().then(id => {
@@ -42,17 +56,19 @@ export function useProjects() {
     });
   }, []);
   
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!userId) return;
     
     setLoading(true);
+    setError(null);
+    
     try {
       console.log('Fetching data for user ID:', userId);
       
       // Call the fixed security definer function for team memberships
       const { data: teamIds, error: teamIdsError } = await supabase.rpc(
         'get_user_team_memberships',
-        { user_id: userId }
+        { p_user_id: userId }
       );
       
       if (teamIdsError) {
@@ -108,6 +124,7 @@ export function useProjects() {
       );
     } catch (error: any) {
       console.error("Error fetching dashboard data:", error);
+      setError(error.message || "Failed to load dashboard data");
       toast({
         title: "Failed to load data",
         description: error instanceof Error ? error.message : "An unexpected error occurred",
@@ -116,13 +133,13 @@ export function useProjects() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId, activeTeamId]);
   
   useEffect(() => {
     if (userId) {
       fetchData();
     }
-  }, [userId, activeTeamId]);
+  }, [userId, fetchData]);
   
   // Add refreshProjects function to manually trigger data refresh
   const refreshProjects = () => {
@@ -157,6 +174,7 @@ export function useProjects() {
     projects: filteredProjects,
     teams,
     loading,
+    error,
     activeTeamId,
     setActiveTeamId,
     sortBy,

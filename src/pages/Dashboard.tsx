@@ -6,6 +6,8 @@ import { DashboardControls } from "@/components/dashboard/DashboardControls";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { supabase } from "@/integrations/supabase/client";
 import { useProjects } from "@/hooks/use-projects";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
 
 // Define the prototype interface
 interface Prototype {
@@ -24,6 +26,7 @@ interface Prototype {
 }
 
 const Dashboard = () => {
+  const { toast } = useToast();
   const { 
     projects, 
     teams, 
@@ -56,6 +59,11 @@ const Dashboard = () => {
       
       if (error) {
         console.error('Error fetching prototypes:', error);
+        toast({
+          title: "Error loading prototypes",
+          description: error.message,
+          variant: "destructive"
+        });
         return;
       }
       
@@ -76,8 +84,13 @@ const Dashboard = () => {
       }));
       
       setPrototypes(transformedData);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error in fetchPrototypes:', err);
+      toast({
+        title: "Error loading prototypes",
+        description: err.message || "An unexpected error occurred",
+        variant: "destructive"
+      });
     } finally {
       setLoadingPrototypes(false);
     }
@@ -85,7 +98,17 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchPrototypes();
-  }, []);
+    // Set up a refresh interval for prototypes with 'pending' status
+    const pendingInterval = setInterval(() => {
+      const hasPendingPrototypes = prototypes.some(p => p.deployment_status === 'pending');
+      if (hasPendingPrototypes) {
+        console.log('Refreshing prototypes with pending status...');
+        fetchPrototypes();
+      }
+    }, 30000); // Check every 30 seconds
+    
+    return () => clearInterval(pendingInterval);
+  }, [prototypes]);
 
   // Combine projects and prototypes for display
   const allItems = [
@@ -110,6 +133,8 @@ const Dashboard = () => {
       tags: [prototype.tech_stack],
       source: "code" as const,
       isTeam: false,
+      status: prototype.deployment_status,
+      previewUrl: prototype.preview_url || prototype.deployment_url
     }))
   ];
 
@@ -131,6 +156,15 @@ const Dashboard = () => {
       : dateA.getTime() - dateB.getTime();
   });
 
+  const handleRefresh = () => {
+    fetchPrototypes();
+    refreshProjects();
+    toast({
+      title: "Refreshed",
+      description: "Your dashboard has been refreshed",
+    });
+  };
+
   return (
     <div className="min-h-screen flex flex-col w-full">
       <Header />
@@ -149,6 +183,27 @@ const Dashboard = () => {
                   : "Manage your personal prototypes"}
               </p>
             </div>
+            <button 
+              onClick={handleRefresh} 
+              className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-4 w-4"
+              >
+                <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                <path d="M3 3v5h5" />
+                <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+                <path d="M16 16h5v5" />
+              </svg>
+              Refresh
+            </button>
           </div>
 
           <DashboardControls
@@ -164,7 +219,10 @@ const Dashboard = () => {
 
           {(loading || loadingPrototypes) ? (
             <div className="flex justify-center py-20">
-              <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+              <div className="flex flex-col items-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+                <p className="text-muted-foreground">Loading projects and prototypes...</p>
+              </div>
             </div>
           ) : sortedItems.length > 0 ? (
             <PrototypeGrid
@@ -193,11 +251,20 @@ const Dashboard = () => {
 
 // Helper function to get color for tech stack
 function getTechStackColor(techStack: string): string {
-  switch (techStack) {
+  switch (techStack.toLowerCase()) {
     case 'react':
       return '61DAFB';
     case 'vanilla':
       return 'F0DB4F';
+    case 'vue':
+      return '42B883';
+    case 'angular':
+      return 'DD0031';
+    case 'svelte':
+      return 'FF3E00';
+    case 'nextjs':
+    case 'next.js':
+      return '000000';
     default:
       return '6366F1';
   }
