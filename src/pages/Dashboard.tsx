@@ -1,13 +1,10 @@
+
 import { useState, useEffect } from "react";
 import { Header } from "@/components/layout/Header";
 import { PrototypeGrid } from "@/components/dashboard/PrototypeGrid";
 import { DashboardControls } from "@/components/dashboard/DashboardControls";
 import { EmptyState } from "@/components/dashboard/EmptyState";
-import { AddPrototypeModal } from "@/components/add-prototype/AddPrototypeModal";
-import { useProjects } from "@/hooks/use-projects";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
 
 // Define the prototype interface
 interface Prototype {
@@ -37,7 +34,6 @@ const Dashboard = () => {
     refreshProjects
   } = useProjects();
 
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [prototypes, setPrototypes] = useState<Prototype[]>([]);
   const [loadingPrototypes, setLoadingPrototypes] = useState(true);
 
@@ -81,6 +77,9 @@ const Dashboard = () => {
   useEffect(() => {
     fetchPrototypes();
   }, []);
+
+  // Fix missing import
+  import { useProjects } from "@/hooks/use-projects";
 
   // Combine projects and prototypes for display
   const allItems = [
@@ -126,10 +125,6 @@ const Dashboard = () => {
       : dateA.getTime() - dateB.getTime();
   });
 
-  const handleAddSuccess = () => {
-    fetchPrototypes();
-  };
-
   return (
     <div className="min-h-screen flex flex-col w-full">
       <Header />
@@ -147,23 +142,6 @@ const Dashboard = () => {
                   ? "Manage and collaborate on team prototypes"
                   : "Manage your personal prototypes"}
               </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button 
-                onClick={() => setIsAddModalOpen(true)}
-                className="gap-1"
-              >
-                <Plus className="h-4 w-4" />
-                <span>Add Prototype</span>
-              </Button>
-              <Button 
-                variant="outline"
-                onClick={() => window.location.href = '/upload-prototype'} 
-                className="gap-1"
-              >
-                <Plus className="h-4 w-4" />
-                <span>Upload HTML/ZIP</span>
-              </Button>
             </div>
           </div>
 
@@ -192,17 +170,17 @@ const Dashboard = () => {
             <EmptyState 
               isTeam={isTeamContext} 
               teamName={activeTeam?.name}
-              onAddPrototype={() => setIsAddModalOpen(true)}
+              onAddPrototype={() => {
+                // Find the Add Prototype button in the header and click it
+                const addButton = document.querySelector('button:has(.h-4.w-4)') as HTMLButtonElement;
+                if (addButton) {
+                  addButton.click();
+                }
+              }}
             />
           )}
         </div>
       </main>
-
-      <AddPrototypeModal 
-        open={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        onSuccess={handleAddSuccess}
-      />
     </div>
   );
 };

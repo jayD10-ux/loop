@@ -1,9 +1,9 @@
 
 import { useState, useEffect } from "react";
-import { Bell, User, Plus, LogOut } from "lucide-react";
+import { Bell, User, Plus, LogOut, Upload, FileArchive, Code } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/mode-toggle";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -15,12 +15,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "@/hooks/use-toast";
+import { DualUploadModal } from "@/components/prototype/DualUploadModal";
 
 export const Header = () => {
   const [isSignedIn, setIsSignedIn] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [profile, setProfile] = useState<{first_name?: string; last_name?: string} | null>(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const isDashboard = location.pathname === "/dashboard";
 
   useEffect(() => {
     // Set up auth state change listener
@@ -107,6 +111,21 @@ export const Header = () => {
     return (firstInitial + lastInitial).toUpperCase() || "U";
   };
 
+  const handleUploadSuccess = (prototype: any) => {
+    toast({
+      title: "Prototype added",
+      description: "Your prototype has been successfully added."
+    });
+    
+    if (isDashboard) {
+      // If we're already on the dashboard, we can just refresh it
+      window.location.reload();
+    } else {
+      // Navigate to the dashboard
+      navigate('/dashboard');
+    }
+  };
+
   return (
     <header className="border-b border-border bg-background sticky top-0 z-10">
       <div className="container flex h-16 items-center justify-between">
@@ -120,12 +139,25 @@ export const Header = () => {
           {isLoaded ? (
             isSignedIn ? (
               <>
-                <Button variant="outline" size="sm" className="gap-1" asChild>
-                  <Link to="/add-prototype">
-                    <Plus className="h-4 w-4" />
-                    <span>Add Prototype</span>
-                  </Link>
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-1">
+                      <Plus className="h-4 w-4" />
+                      <span>Add Prototype</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuItem onClick={() => setIsAddModalOpen(true)} className="cursor-pointer">
+                      <Code className="mr-2 h-4 w-4" />
+                      <span>New Prototype</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/upload-prototype')} className="cursor-pointer">
+                      <Upload className="mr-2 h-4 w-4" />
+                      <span>Upload HTML/ZIP</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                
                 <Button variant="ghost" size="icon" className="relative">
                   <Bell className="h-5 w-5" />
                   <span className="absolute top-1 right-1 w-2 h-2 bg-loop-purple rounded-full"></span>
@@ -168,6 +200,13 @@ export const Header = () => {
           )}
         </div>
       </div>
+      
+      {/* Prototype Upload Modal */}
+      <DualUploadModal
+        open={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onSuccess={handleUploadSuccess}
+      />
     </header>
   );
 };

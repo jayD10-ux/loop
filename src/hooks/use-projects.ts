@@ -49,64 +49,34 @@ export function useProjects() {
     try {
       console.log('Fetching data for user ID:', userId);
       
-      // Directly query teams the user is a member of
-      const { data: userTeams, error: teamsError } = await supabase.rpc(
+      // Call the fixed security definer function for team memberships
+      const { data: teamIds, error: teamIdsError } = await supabase.rpc(
         'get_user_team_memberships',
         { user_id: userId }
-      ).then(async (result) => {
-        if (result.error) {
-          console.error('Error calling RPC function:', result.error);
-          
-          // Fallback: directly query team memberships if the RPC fails
-          const { data: membershipData, error: membershipError } = await supabase
-            .from('team_members')
-            .select('team_id')
-            .eq('user_id', userId);
-            
-          if (membershipError) {
-            throw new Error(`Failed to fetch team memberships: ${membershipError.message}`);
-          }
-          
-          const teamIds = membershipData?.map(membership => membership.team_id) || [];
-          
-          if (teamIds.length === 0) {
-            return { data: [], error: null };
-          }
-          
-          // Get team details
-          const { data: teamsData, error: teamsFetchError } = await supabase
-            .from('teams')
-            .select('*')
-            .in('id', teamIds);
-            
-          if (teamsFetchError) {
-            throw new Error(`Failed to fetch teams: ${teamsFetchError.message}`);
-          }
-          
-          return { data: teamsData || [], error: null };
-        }
-        
-        // If RPC worked, get the team details
-        const teamIds = result.data as string[];
-        
-        if (!teamIds || teamIds.length === 0) {
-          return { data: [], error: null };
-        }
-        
-        const { data: teamsData, error: teamsFetchError } = await supabase
+      );
+      
+      if (teamIdsError) {
+        console.error('Error calling team membership function:', teamIdsError);
+        throw new Error(`Failed to fetch team memberships: ${teamIdsError.message}`);
+      }
+      
+      console.log('Team IDs:', teamIds);
+      
+      // If user has team memberships, fetch team details
+      let userTeams: Team[] = [];
+      
+      if (teamIds && teamIds.length > 0) {
+        const { data: teamsData, error: teamsError } = await supabase
           .from('teams')
           .select('*')
           .in('id', teamIds);
           
-        if (teamsFetchError) {
-          throw new Error(`Failed to fetch teams: ${teamsFetchError.message}`);
+        if (teamsError) {
+          console.error('Error fetching teams:', teamsError);
+          throw new Error(`Failed to fetch teams: ${teamsError.message}`);
         }
         
-        return { data: teamsData || [], error: null };
-      });
-      
-      if (teamsError) {
-        throw teamsError;
+        userTeams = teamsData || [];
       }
       
       console.log('User teams:', userTeams);
@@ -117,12 +87,13 @@ export function useProjects() {
         setActiveTeamId(userTeams[0].id);
       }
       
-      // 3. Fetch projects - both owned by user and by teams user belongs to
+      // Fetch projects - both owned by user and by teams user belongs to
       const { data: projectsData, error: projectsError } = await supabase
         .from('projects')
         .select('*');
         
       if (projectsError) {
+        console.error('Error fetching projects:', projectsError);
         throw new Error(`Failed to fetch projects: ${projectsError.message}`);
       }
       
