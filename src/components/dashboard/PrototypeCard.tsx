@@ -3,7 +3,9 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useNavigate } from "react-router-dom";
-import { Code, FileCode, FileArchive, MessageSquare, ExternalLink, Clock, CheckCircle, AlertCircle } from "lucide-react";
+import { Code, FileCode, FileArchive, MessageSquare, ExternalLink, Clock, CheckCircle, AlertCircle, Pencil, Calendar } from "lucide-react";
+import { useState } from "react";
+import { format, isToday, isYesterday, isThisWeek } from "date-fns";
 
 interface PrototypeCardProps {
   id: string;
@@ -37,6 +39,7 @@ export function PrototypeCard({
   previewUrl
 }: PrototypeCardProps) {
   const navigate = useNavigate();
+  const [isHovered, setIsHovered] = useState(false);
 
   const handleCardClick = () => {
     navigate(`/prototype/${id}`);
@@ -74,11 +77,31 @@ export function PrototypeCard({
         return '';
     }
   };
+  
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      
+      if (isToday(date)) {
+        return `Today at ${format(date, 'h:mm a')}`;
+      } else if (isYesterday(date)) {
+        return `Yesterday at ${format(date, 'h:mm a')}`;
+      } else if (isThisWeek(date)) {
+        return format(date, 'EEEE');
+      } else {
+        return format(date, 'MMM d, yyyy');
+      }
+    } catch (error) {
+      return dateString;
+    }
+  };
 
   return (
     <Card 
-      className="overflow-hidden transition-all hover:shadow-md cursor-pointer group"
+      className="overflow-hidden transition-all hover:shadow-md cursor-pointer group border-border"
       onClick={handleCardClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       <div className="relative h-48 overflow-hidden">
         <img 
@@ -117,6 +140,35 @@ export function PrototypeCard({
             </Badge>
           )}
         </div>
+        
+        {isHovered && (
+          <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <div className="flex gap-3">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className="p-2 bg-white rounded-full hover:bg-gray-100 transition-colors" onClick={(e) => {
+                    e.stopPropagation();
+                    navigate(`/prototype/${id}/edit`);
+                  }}>
+                    <Pencil className="h-5 w-5 text-gray-700" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>Edit</TooltipContent>
+              </Tooltip>
+              
+              {previewUrl && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button className="p-2 bg-white rounded-full hover:bg-gray-100 transition-colors" onClick={handlePreviewClick}>
+                      <ExternalLink className="h-5 w-5 text-gray-700" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>View preview</TooltipContent>
+                </Tooltip>
+              )}
+            </div>
+          </div>
+        )}
       </div>
       <CardContent className="p-4">
         <div className="flex justify-between items-start mb-2">
@@ -147,11 +199,8 @@ export function PrototypeCard({
       </CardContent>
       <CardFooter className="px-4 py-3 bg-muted/30 flex justify-between items-center text-xs text-muted-foreground">
         <div className="flex items-center">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <polyline points="12 6 12 12 16 14"></polyline>
-          </svg>
-          {updatedAt}
+          <Calendar className="h-3 w-3 mr-1" />
+          {formatDate(updatedAt)}
         </div>
         <div className="flex items-center gap-3">
           {commentCount > 0 && (

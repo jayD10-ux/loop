@@ -30,6 +30,7 @@ export function useProjects() {
   // Sort options
   const [sortBy, setSortBy] = useState<'newest' | 'oldest'>('newest');
   const [searchQuery, setSearchQuery] = useState("");
+  const [retryCount, setRetryCount] = useState(0);
   
   useEffect(() => {
     // Get user session
@@ -122,18 +123,33 @@ export function useProjects() {
           owner_type: p.owner_type as 'user' | 'team'
         }))
       );
+
+      // Reset retry count on successful fetch
+      setRetryCount(0);
     } catch (error: any) {
       console.error("Error fetching dashboard data:", error);
-      setError(error.message || "Failed to load dashboard data");
-      toast({
-        title: "Failed to load data",
-        description: error instanceof Error ? error.message : "An unexpected error occurred",
-        variant: "destructive",
-      });
+      
+      // Implement exponential backoff for retries
+      if (retryCount < 3) {
+        const retryDelay = Math.pow(2, retryCount) * 1000; // Exponential backoff: 1s, 2s, 4s
+        console.log(`Retrying in ${retryDelay / 1000} seconds... (Attempt ${retryCount + 1}/3)`);
+        
+        setTimeout(() => {
+          setRetryCount(prev => prev + 1);
+          fetchData();
+        }, retryDelay);
+      } else {
+        setError(error.message || "Failed to load dashboard data");
+        toast({
+          title: "Failed to load data",
+          description: error instanceof Error ? error.message : "An unexpected error occurred",
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
     }
-  }, [userId, activeTeamId]);
+  }, [userId, activeTeamId, retryCount]);
   
   useEffect(() => {
     if (userId) {
@@ -184,5 +200,6 @@ export function useProjects() {
     hasTeams: teams.length > 0,
     activeTeam: teams.find(team => team.id === activeTeamId),
     refreshProjects,
+    retryCount,
   };
 }
