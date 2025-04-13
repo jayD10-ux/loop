@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Header } from "@/components/layout/Header";
 import { PrototypeGrid } from "@/components/dashboard/PrototypeGrid";
@@ -29,24 +28,16 @@ const Dashboard = () => {
   const { toast } = useToast();
   const { 
     projects, 
-    teams, 
     loading, 
-    activeTeamId, 
-    setActiveTeamId,
     sortBy,
     setSortBy,
     searchQuery,
     setSearchQuery,
-    hasTeams,
-    activeTeam,
     refreshProjects
   } = useProjects();
 
   const [prototypes, setPrototypes] = useState<Prototype[]>([]);
   const [loadingPrototypes, setLoadingPrototypes] = useState(true);
-
-  // Team functionality disabled
-  const isTeamContext = false;
 
   // Fetch prototypes from Supabase
   const fetchPrototypes = async () => {
@@ -122,7 +113,7 @@ const Dashboard = () => {
       commentCount: 0,
       tags: [],
       source: "figma" as const,
-      isTeam: false, // Disable team feature
+      isTeam: false,
     })),
     ...(prototypes || []).map(prototype => ({
       id: prototype.id,
@@ -202,14 +193,14 @@ const Dashboard = () => {
           </div>
 
           <DashboardControls
-            teams={teams}
-            activeTeamId={activeTeamId}
-            onTeamChange={setActiveTeamId}
+            teams={[]}
+            activeTeamId={null}
+            onTeamChange={() => {}}
             sortBy={sortBy}
             onSortChange={setSortBy}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
-            hasTeams={false}  // Disable team features
+            hasTeams={false}
           />
 
           {(loading || loadingPrototypes) ? (

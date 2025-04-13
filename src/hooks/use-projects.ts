@@ -13,15 +13,8 @@ interface Project {
   updated_at: string;
 }
 
-interface Team {
-  id: string;
-  name: string;
-  owner_user_id: string;
-}
-
 export function useProjects() {
   const [projects, setProjects] = useState<Project[]>([]);
-  const [teams, setTeams] = useState<Team[]>([]); // Keep the state but won't display
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -31,9 +24,11 @@ export function useProjects() {
   const [searchQuery, setSearchQuery] = useState("");
   const [retryCount, setRetryCount] = useState(0);
   
-  // Temporarily disable team functionality
+  // Disable team functionality completely
+  const teams = []; // Empty array
   const activeTeamId = null;
   const setActiveTeamId = () => {}; // No-op function
+  const hasTeams = false;
   
   useEffect(() => {
     // Get user session
@@ -67,12 +62,9 @@ export function useProjects() {
     setError(null);
     
     try {
-      console.log('Fetching data for user ID:', userId);
+      console.log('Fetching personal projects for user ID:', userId);
       
-      // Skip team fetching for now to avoid infinite recursion
-      setTeams([]);
-      
-      // Fetch only user-owned projects to avoid team-related queries
+      // Only fetch personal projects - completely avoid team-related queries
       const { data: projectsData, error: projectsError } = await supabase
         .from('projects')
         .select('*')
@@ -84,7 +76,7 @@ export function useProjects() {
         throw new Error(`Failed to fetch projects: ${projectsError.message}`);
       }
       
-      console.log('Projects data:', projectsData);
+      console.log('Personal projects data:', projectsData);
       
       setProjects(
         (projectsData || []).map(p => ({
@@ -111,7 +103,7 @@ export function useProjects() {
         setError(error.message || "Failed to load dashboard data");
         toast({
           title: "Failed to load data",
-          description: error instanceof Error ? error.message : "An unexpected error occurred",
+          description: "There was a problem loading your projects. Please try again later.",
           variant: "destructive",
         });
       }
@@ -134,7 +126,7 @@ export function useProjects() {
   // Get filtered and sorted projects
   const filteredProjects = projects
     .filter(project => {
-      // Only show user's projects, skip team filtering
+      // Only show user's projects
       if (project.owner_type !== 'user') return false;
       
       // Apply search filter
@@ -155,7 +147,7 @@ export function useProjects() {
   
   return {
     projects: filteredProjects,
-    teams: [], // Return empty array to hide team selector
+    teams: [], // Return empty array
     loading,
     error,
     activeTeamId,
