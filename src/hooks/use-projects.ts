@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -65,42 +66,23 @@ export function useProjects() {
     try {
       console.log('Fetching data for user ID:', userId);
       
-      // Use the security definer function that doesn't cause recursion
-      const { data: teamIds, error: teamIdsError } = await supabase.rpc(
-        'get_user_teams_for_access',
-        { p_user_id: userId } 
-      );
+      // First, fetch teams directly - with our fixed RLS policies, this should work
+      // The new RLS policies on teams will handle access control properly
+      const { data: teamsData, error: teamsError } = await supabase
+        .from('teams')
+        .select('*');
       
-      if (teamIdsError) {
-        console.error('Error calling team access function:', teamIdsError);
-        throw new Error(`Failed to fetch team access: ${teamIdsError.message}`);
+      if (teamsError) {
+        console.error('Error fetching teams:', teamsError);
+        throw new Error(`Failed to fetch teams: ${teamsError.message}`);
       }
       
-      console.log('Team IDs:', teamIds);
-      
-      // If user has team access, fetch team details
-      let userTeams: Team[] = [];
-      
-      if (teamIds && teamIds.length > 0) {
-        const { data: teamsData, error: teamsError } = await supabase
-          .from('teams')
-          .select('*')
-          .in('id', teamIds);
-          
-        if (teamsError) {
-          console.error('Error fetching teams:', teamsError);
-          throw new Error(`Failed to fetch teams: ${teamsError.message}`);
-        }
-        
-        userTeams = teamsData || [];
-      }
-      
-      console.log('User teams:', userTeams);
-      setTeams(userTeams);
+      console.log('User teams:', teamsData);
+      setTeams(teamsData || []);
       
       // Set active team to first team if not already set
-      if (userTeams.length > 0 && !activeTeamId) {
-        setActiveTeamId(userTeams[0].id);
+      if (teamsData && teamsData.length > 0 && !activeTeamId) {
+        setActiveTeamId(teamsData[0].id);
       }
       
       // Fetch projects - both owned by user and by teams user belongs to
