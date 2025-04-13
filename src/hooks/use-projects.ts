@@ -24,7 +24,7 @@ export function useProjects() {
   const [searchQuery, setSearchQuery] = useState("");
   const [retryCount, setRetryCount] = useState(0);
   
-  // Disable team functionality completely
+  // Completely disable team functionality
   const teams = []; // Empty array
   const activeTeamId = null;
   const setActiveTeamId = () => {}; // No-op function
@@ -64,7 +64,7 @@ export function useProjects() {
     try {
       console.log('Fetching personal projects for user ID:', userId);
       
-      // Only fetch personal projects - completely avoid team-related queries
+      // IMPORTANT: Only fetch personal projects - completely avoid team-related queries
       const { data: projectsData, error: projectsError } = await supabase
         .from('projects')
         .select('*')
@@ -126,7 +126,7 @@ export function useProjects() {
   // Get filtered and sorted projects
   const filteredProjects = projects
     .filter(project => {
-      // Only show user's projects
+      // Only show user's personal projects
       if (project.owner_type !== 'user') return false;
       
       // Apply search filter

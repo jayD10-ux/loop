@@ -3,13 +3,8 @@ import { Search, SortDesc, SortAsc } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-interface Team {
-  id: string;
-  name: string;
-}
-
 interface DashboardControlsProps {
-  teams: Team[];
+  teams: any[];
   activeTeamId: string | null;
   onTeamChange: (teamId: string | null) => void;
   sortBy: 'newest' | 'oldest';
