@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -66,7 +65,7 @@ export function useProjects() {
     try {
       console.log('Fetching data for user ID:', userId);
       
-      // Use the get_user_teams_for_access function to get team IDs
+      // Use the security definer function that doesn't cause recursion
       const { data: teamIds, error: teamIdsError } = await supabase.rpc(
         'get_user_teams_for_access',
         { p_user_id: userId } 
