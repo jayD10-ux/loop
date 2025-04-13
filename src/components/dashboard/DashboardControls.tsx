@@ -2,7 +2,7 @@
 import { Search, SortDesc, SortAsc } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { TeamSelector } from "./TeamSelector";
+// TeamSelector import removed to disable team functionality
 
 interface Team {
   id: string;
@@ -33,13 +33,7 @@ export function DashboardControls({
   return (
     <div className="flex flex-col md:flex-row justify-between gap-4 mb-6">
       <div className="flex items-center gap-2">
-        {hasTeams && (
-          <TeamSelector 
-            teams={teams} 
-            activeTeamId={activeTeamId} 
-            onTeamChange={onTeamChange} 
-          />
-        )}
+        {/* Team selector removed to disable team functionality */}
       </div>
       
       <div className="flex items-center gap-2">

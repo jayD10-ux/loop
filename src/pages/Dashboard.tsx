@@ -45,7 +45,8 @@ const Dashboard = () => {
   const [prototypes, setPrototypes] = useState<Prototype[]>([]);
   const [loadingPrototypes, setLoadingPrototypes] = useState(true);
 
-  const isTeamContext = hasTeams && activeTeamId !== null;
+  // Team functionality disabled
+  const isTeamContext = false;
 
   // Fetch prototypes from Supabase
   const fetchPrototypes = async () => {
@@ -121,7 +122,7 @@ const Dashboard = () => {
       commentCount: 0,
       tags: [],
       source: "figma" as const,
-      isTeam: project.owner_type === 'team',
+      isTeam: false, // Disable team feature
     })),
     ...(prototypes || []).map(prototype => ({
       id: prototype.id,
@@ -172,15 +173,9 @@ const Dashboard = () => {
         <div className="container py-8">
           <div className="flex justify-between items-center mb-4">
             <div>
-              <h1 className="text-2xl font-bold">
-                {isTeamContext 
-                  ? `${activeTeam?.name} Projects` 
-                  : "My Projects"}
-              </h1>
+              <h1 className="text-2xl font-bold">My Projects</h1>
               <p className="text-muted-foreground">
-                {isTeamContext
-                  ? "Manage and collaborate on team prototypes"
-                  : "Manage your personal prototypes"}
+                Manage your personal prototypes
               </p>
             </div>
             <button 
@@ -214,7 +209,7 @@ const Dashboard = () => {
             onSortChange={setSortBy}
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
-            hasTeams={hasTeams}
+            hasTeams={false}  // Disable team features
           />
 
           {(loading || loadingPrototypes) ? (
@@ -232,8 +227,7 @@ const Dashboard = () => {
             />
           ) : (
             <EmptyState 
-              isTeam={isTeamContext} 
-              teamName={activeTeam?.name}
+              isTeam={false} 
               onAddPrototype={() => {
                 // Find the Add Prototype button in the header and click it
                 const addButton = document.querySelector('button:has(.h-4.w-4)') as HTMLButtonElement;

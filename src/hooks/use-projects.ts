@@ -21,9 +21,8 @@ interface Team {
 
 export function useProjects() {
   const [projects, setProjects] = useState<Project[]>([]);
-  const [teams, setTeams] = useState<Team[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]); // Keep the state but won't display
   const [loading, setLoading] = useState(true);
-  const [activeTeamId, setActiveTeamId] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   
@@ -31,6 +30,10 @@ export function useProjects() {
   const [sortBy, setSortBy] = useState<'newest' | 'oldest'>('newest');
   const [searchQuery, setSearchQuery] = useState("");
   const [retryCount, setRetryCount] = useState(0);
+  
+  // Temporarily disable team functionality
+  const activeTeamId = null;
+  const setActiveTeamId = () => {}; // No-op function
   
   useEffect(() => {
     // Get user session
@@ -66,29 +69,15 @@ export function useProjects() {
     try {
       console.log('Fetching data for user ID:', userId);
       
-      // First, fetch teams directly - with our fixed RLS policies, this should work
-      // The new RLS policies on teams will handle access control properly
-      const { data: teamsData, error: teamsError } = await supabase
-        .from('teams')
-        .select('*');
+      // Skip team fetching for now to avoid infinite recursion
+      setTeams([]);
       
-      if (teamsError) {
-        console.error('Error fetching teams:', teamsError);
-        throw new Error(`Failed to fetch teams: ${teamsError.message}`);
-      }
-      
-      console.log('User teams:', teamsData);
-      setTeams(teamsData || []);
-      
-      // Set active team to first team if not already set
-      if (teamsData && teamsData.length > 0 && !activeTeamId) {
-        setActiveTeamId(teamsData[0].id);
-      }
-      
-      // Fetch projects - both owned by user and by teams user belongs to
+      // Fetch only user-owned projects to avoid team-related queries
       const { data: projectsData, error: projectsError } = await supabase
         .from('projects')
-        .select('*');
+        .select('*')
+        .eq('owner_type', 'user')
+        .eq('owner_id', userId);
         
       if (projectsError) {
         console.error('Error fetching projects:', projectsError);
@@ -97,7 +86,6 @@ export function useProjects() {
       
       console.log('Projects data:', projectsData);
       
-      // With RLS, we'll only get back the projects the user has access to
       setProjects(
         (projectsData || []).map(p => ({
           ...p,
@@ -130,7 +118,7 @@ export function useProjects() {
     } finally {
       setLoading(false);
     }
-  }, [userId, activeTeamId, retryCount]);
+  }, [userId, retryCount]);
   
   useEffect(() => {
     if (userId) {
@@ -146,10 +134,8 @@ export function useProjects() {
   // Get filtered and sorted projects
   const filteredProjects = projects
     .filter(project => {
-      // Apply team filter if active team is selected
-      if (activeTeamId && project.owner_type === 'team') {
-        if (project.owner_id !== activeTeamId) return false;
-      }
+      // Only show user's projects, skip team filtering
+      if (project.owner_type !== 'user') return false;
       
       // Apply search filter
       if (searchQuery && !project.name.toLowerCase().includes(searchQuery.toLowerCase())) {
@@ -169,7 +155,7 @@ export function useProjects() {
   
   return {
     projects: filteredProjects,
-    teams,
+    teams: [], // Return empty array to hide team selector
     loading,
     error,
     activeTeamId,
@@ -178,8 +164,8 @@ export function useProjects() {
     setSortBy,
     searchQuery,
     setSearchQuery,
-    hasTeams: teams.length > 0,
-    activeTeam: teams.find(team => team.id === activeTeamId),
+    hasTeams: false, // Disable team features
+    activeTeam: null,
     refreshProjects,
     retryCount,
   };
