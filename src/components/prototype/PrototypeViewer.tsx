@@ -119,6 +119,7 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
     Object.keys(sandpackFiles).find(file => file === "index.html") ||
     Object.keys(sandpackFiles).find(file => file.endsWith(".html")) ||
     Object.keys(sandpackFiles).find(file => file === "index.js") ||
+    Object.keys(sandpackFiles).find(file => file.endsWith(".js")) ||
     Object.keys(sandpackFiles)[0] ||
     "index.html";
 
@@ -134,6 +135,71 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
   };
 
   const figmaUrl = prototype.figma_link || null;
+
+  useEffect(() => {
+    const root = document.documentElement;
+    
+    if (activeTab === 'preview') {
+      console.log('Adding prototype-preview-mode class to document root');
+      root.classList.add('prototype-preview-mode');
+      
+      const styleEl = document.createElement('style');
+      styleEl.id = 'header-hide-style';
+      styleEl.textContent = `
+        /* Target all possible header implementations */
+        .prototype-preview-mode header,
+        .prototype-preview-mode [data-component-name="Header"],
+        .prototype-preview-mode [data-lov-name="header"], 
+        .prototype-preview-mode [data-component-file="Header.tsx"],
+        .prototype-preview-mode .border-b.border-border.bg-background.sticky.top-0.z-10,
+        .prototype-preview-mode div[data-lov-id*="Header.tsx"],
+        .prototype-preview-mode div[data-component-path*="Header.tsx"] {
+          display: none !important;
+        }
+        
+        /* Ensure the content container takes full height when header is hidden */
+        .prototype-preview-mode .h-screen {
+          height: 100vh !important;
+        }
+      `;
+      
+      const existingStyle = document.getElementById('header-hide-style');
+      if (existingStyle) {
+        existingStyle.remove();
+      }
+      
+      document.head.appendChild(styleEl);
+      
+      const headerElements = document.querySelectorAll('header, [data-component-name="Header"], [data-component-path*="Header.tsx"], .border-b.border-border.bg-background.sticky.top-0.z-10');
+      console.log(`Found ${headerElements.length} potential header elements in main DOM`);
+      headerElements.forEach((el, i) => {
+        console.log(`Setting display:none on header element ${i}:`, el);
+        (el as HTMLElement).style.display = 'none';
+      });
+    } else {
+      console.log('Removing prototype-preview-mode class from document root');
+      root.classList.remove('prototype-preview-mode');
+      
+      const styleEl = document.getElementById('header-hide-style');
+      if (styleEl) {
+        styleEl.remove();
+      }
+      
+      const headerElements = document.querySelectorAll('header, [data-component-name="Header"], [data-component-path*="Header.tsx"], .border-b.border-border.bg-background.sticky.top-0.z-10');
+      headerElements.forEach(el => {
+        (el as HTMLElement).style.display = '';
+      });
+    }
+    
+    return () => {
+      console.log('Cleaning up preview/header effect');
+      root.classList.remove('prototype-preview-mode');
+      const styleEl = document.getElementById('header-hide-style');
+      if (styleEl) {
+        styleEl.remove();
+      }
+    };
+  }, [activeTab]);
 
   return (
     <div className="h-screen flex flex-col bg-background">
@@ -200,7 +266,7 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
 
       <div className="flex-1 relative">
         {activeTab === 'preview' && (
-          <div className="w-full h-full absolute inset-0 m-0 p-4 bg-gray-50 overflow-auto" ref={previewRef}>
+          <div className="w-full h-full absolute inset-0 m-0 bg-gray-50 overflow-auto preview-section" ref={previewRef}>
             <div className={getDevicePreviewClass()}>
               {prototype.deployment_url || prototype.deployment_status ? (
                 <PreviewWindow
