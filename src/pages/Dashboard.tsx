@@ -24,6 +24,7 @@ interface Prototype {
   deployment_url?: string;
   preview_url?: string;
   file_path?: string;
+  figma_preview_url?: string | null;
 }
 
 const Dashboard = () => {
@@ -80,7 +81,8 @@ const Dashboard = () => {
         deployment_status: item.deployment_status,
         deployment_url: item.deployment_url,
         preview_url: item.preview_url,
-        file_path: item.file_path
+        file_path: item.file_path,
+        figma_preview_url: item.figma_preview_url
       }));
       
       setPrototypes(transformedData);
@@ -130,13 +132,14 @@ const Dashboard = () => {
       title: prototype.name,
       description: prototype.description || "",
       thumbnailUrl: `https://placehold.co/600x400/${getTechStackColor(prototype.tech_stack)}/FFFFFF?text=${prototype.tech_stack.charAt(0).toUpperCase() + prototype.tech_stack.slice(1)}`,
-      updatedAt: new Date(prototype.created_at).toLocaleDateString(),
+      updatedAt: prototype.updated_at || prototype.created_at,
       commentCount: 0,
       tags: [prototype.tech_stack],
       source: "code" as const,
       isTeam: false,
       status: prototype.deployment_status,
-      previewUrl: prototype.preview_url || prototype.deployment_url
+      previewUrl: prototype.preview_url || prototype.deployment_url,
+      figmaPreviewUrl: prototype.figma_preview_url
     }))
   ];
 

@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { Code, FileCode, FileArchive, MessageSquare, ExternalLink, Clock, CheckCircle, AlertCircle, Pencil, Calendar } from "lucide-react";
 import { useState } from "react";
 import { format, isToday, isYesterday, isThisWeek } from "date-fns";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface PrototypeCardProps {
   id: string;
@@ -21,6 +22,7 @@ interface PrototypeCardProps {
   isTeam?: boolean;
   status?: 'pending' | 'deployed' | 'failed';
   previewUrl?: string;
+  figmaPreviewUrl?: string | null;
 }
 
 export function PrototypeCard({
@@ -36,10 +38,13 @@ export function PrototypeCard({
   sharedBy,
   isTeam,
   status,
-  previewUrl
+  previewUrl,
+  figmaPreviewUrl
 }: PrototypeCardProps) {
   const navigate = useNavigate();
   const [isHovered, setIsHovered] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   const handleCardClick = () => {
     navigate(`/prototype/${id}`);
@@ -96,6 +101,11 @@ export function PrototypeCard({
     }
   };
 
+  // Determine which image to show - prioritize actual previews over placeholders
+  const actualPreviewUrl = figmaPreviewUrl || (previewUrl && status === 'deployed') ? 
+    (figmaPreviewUrl || previewUrl) : 
+    thumbnailUrl;
+
   return (
     <Card 
       className="overflow-hidden transition-all hover:shadow-md cursor-pointer group border-border"
@@ -103,12 +113,42 @@ export function PrototypeCard({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="relative h-48 overflow-hidden">
-        <img 
-          src={thumbnailUrl} 
-          alt={title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-        />
+      <div className="relative h-48 overflow-hidden bg-muted">
+        {!imageLoaded && !imageError && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Skeleton className="h-full w-full" />
+          </div>
+        )}
+        
+        {imageError ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-muted">
+            <div className="text-center p-4">
+              <div className="mx-auto h-10 w-10 text-muted-foreground mb-2">
+                {source === "figma" ? (
+                  <svg viewBox="0 0 38 57" className="h-10 w-10 mx-auto">
+                    <path fill="#1ABCFE" d="M19 28.5a9.5 9.5 0 1 1 19 0 9.5 9.5 0 0 1-19 0z"></path>
+                    <path fill="#0ACF83" d="M0 47.5A9.5 9.5 0 0 1 9.5 38H19v9.5a9.5 9.5 0 1 1-19 0z"></path>
+                    <path fill="#FF7262" d="M19 0v19h9.5a9.5 9.5 0 1 0 0-19H19z"></path>
+                    <path fill="#F24E1E" d="M0 9.5A9.5 9.5 0 0 0 9.5 19H19V0H9.5A9.5 9.5 0 0 0 0 9.5z"></path>
+                    <path fill="#A259FF" d="M0 28.5A9.5 9.5 0 0 0 9.5 38H19V19H9.5A9.5 9.5 0 0 0 0 28.5z"></path>
+                  </svg>
+                ) : (
+                  <Code className="h-10 w-10 mx-auto" />
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">{title}</p>
+            </div>
+          </div>
+        ) : (
+          <img 
+            src={actualPreviewUrl}
+            alt={title}
+            className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ${!imageLoaded ? 'opacity-0' : 'opacity-100'}`}
+            onLoad={() => setImageLoaded(true)}
+            onError={() => setImageError(true)}
+          />
+        )}
+
         <div className="absolute top-2 right-2 flex gap-2">
           {source === "figma" && (
             <Badge variant="outline" className="bg-white/80 backdrop-blur-sm">
@@ -170,6 +210,7 @@ export function PrototypeCard({
           </div>
         )}
       </div>
+      
       <CardContent className="p-4">
         <div className="flex justify-between items-start mb-2">
           <h3 className="font-semibold text-lg line-clamp-1">{title}</h3>
