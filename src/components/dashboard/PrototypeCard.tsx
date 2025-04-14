@@ -1,3 +1,4 @@
+
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -20,7 +21,6 @@ interface PrototypeCardProps {
   isTeam?: boolean;
   status?: 'pending' | 'deployed' | 'failed';
   previewUrl?: string;
-  figmaPreviewUrl?: string;
 }
 
 export function PrototypeCard({
@@ -36,12 +36,10 @@ export function PrototypeCard({
   sharedBy,
   isTeam,
   status,
-  previewUrl,
-  figmaPreviewUrl
+  previewUrl
 }: PrototypeCardProps) {
   const navigate = useNavigate();
   const [isHovered, setIsHovered] = useState(false);
-  const [imageError, setImageError] = useState(false);
 
   const handleCardClick = () => {
     navigate(`/prototype/${id}`);
@@ -98,23 +96,6 @@ export function PrototypeCard({
     }
   };
 
-  const getDisplayImage = () => {
-    if (!imageError) {
-      if (figmaPreviewUrl) {
-        return figmaPreviewUrl;
-      }
-      if (previewUrl) {
-        return `https://placehold.co/600x400/5B21B6/FFFFFF?text=Live+Preview`;
-      }
-    }
-    
-    if (source === "figma") {
-      return "https://placehold.co/600x400/A259FF/FFFFFF?text=Figma+Design";
-    }
-    
-    return `https://placehold.co/600x400/${getTechStackColor(tags[0] || "code")}/FFFFFF?text=${(tags[0] || "Code").charAt(0).toUpperCase() + (tags[0] || "Code").slice(1)}`;
-  };
-
   return (
     <Card 
       className="overflow-hidden transition-all hover:shadow-md cursor-pointer group border-border"
@@ -124,10 +105,9 @@ export function PrototypeCard({
     >
       <div className="relative h-48 overflow-hidden">
         <img 
-          src={getDisplayImage()}
+          src={thumbnailUrl} 
           alt={title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          onError={() => setImageError(true)}
         />
         <div className="absolute top-2 right-2 flex gap-2">
           {source === "figma" && (
@@ -248,24 +228,4 @@ export function PrototypeCard({
       </CardFooter>
     </Card>
   );
-}
-
-function getTechStackColor(techStack: string): string {
-  switch (techStack?.toLowerCase()) {
-    case 'react':
-      return '61DAFB';
-    case 'vanilla':
-      return 'F0DB4F';
-    case 'vue':
-      return '42B883';
-    case 'angular':
-      return 'DD0031';
-    case 'svelte':
-      return 'FF3E00';
-    case 'nextjs':
-    case 'next.js':
-      return '000000';
-    default:
-      return '6366F1';
-  }
 }

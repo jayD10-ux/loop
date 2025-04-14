@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from "react";
+import { Header } from "@/components/layout/Header";
 import { PrototypeGrid } from "@/components/dashboard/PrototypeGrid";
 import { DashboardControls } from "@/components/dashboard/DashboardControls";
 import { EmptyState } from "@/components/dashboard/EmptyState";
@@ -23,8 +24,6 @@ interface Prototype {
   deployment_url?: string;
   preview_url?: string;
   file_path?: string;
-  figma_preview_url?: string;
-  figma_link?: string;
 }
 
 const Dashboard = () => {
@@ -137,8 +136,7 @@ const Dashboard = () => {
       source: "code" as const,
       isTeam: false,
       status: prototype.deployment_status,
-      previewUrl: prototype.preview_url || prototype.deployment_url,
-      figmaPreviewUrl: prototype.figma_preview_url
+      previewUrl: prototype.preview_url || prototype.deployment_url
     }))
   ];
 
@@ -182,6 +180,7 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen flex flex-col w-full">
+      <Header />
       <main className="flex-1">
         <div className="container py-8">
           <div className="flex justify-between items-center mb-4">

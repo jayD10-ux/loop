@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Header } from "@/components/layout/Header";
 import { ArrowLeft, Share2, Download, Code, Monitor, Pen } from "lucide-react";
 import { Sandpack } from "@codesandbox/sandpack-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -63,6 +64,7 @@ const PrototypeView = () => {
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col w-full">
+        <Header />
         <main className="flex-1 flex items-center justify-center">
           <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
         </main>
@@ -73,6 +75,7 @@ const PrototypeView = () => {
   if (error || !prototype) {
     return (
       <div className="min-h-screen flex flex-col w-full">
+        <Header />
         <main className="flex-1 p-6">
           <div className="flex flex-col items-center justify-center h-full">
             <h2 className="text-2xl font-bold mb-4">Error</h2>
@@ -88,6 +91,7 @@ const PrototypeView = () => {
 
   return (
     <div className="min-h-screen flex flex-col w-full">
+      <Header />
       <div className="flex-1 relative">
         <PrototypeViewer 
           prototype={prototype} 

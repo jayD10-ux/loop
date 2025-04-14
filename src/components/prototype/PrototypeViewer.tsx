@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { 
   Tabs, 
@@ -16,8 +15,7 @@ import {
   Pen,
   Share2, 
   Download,
-  Figma,
-  Info
+  Figma
 } from "lucide-react";
 import { FeedbackMarker } from "./FeedbackMarker";
 import { CommentThread } from "./CommentThread";
@@ -26,7 +24,6 @@ import { Sandpack } from "@codesandbox/sandpack-react";
 import { PreviewWindow } from "./PreviewWindow";
 import { DevicePreviewControls } from "./DevicePreviewControls";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
 
 interface PrototypeViewerProps {
   prototype: {
@@ -56,7 +53,6 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
   const [selectedCommentId, setSelectedCommentId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("preview");
   const [controlsVisible, setControlsVisible] = useState(true);
-  const [showInfo, setShowInfo] = useState(false);
   
   const controlsRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
@@ -106,18 +102,6 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
     setControlsVisible(!controlsVisible);
   };
 
-  const toggleInfo = () => {
-    setShowInfo(!showInfo);
-  };
-
-  const formatDate = (dateString: string) => {
-    try {
-      return format(new Date(dateString), 'PPP');
-    } catch (error) {
-      return dateString;
-    }
-  };
-
   const sandpackFiles = Object.entries(prototype.files || {}).reduce(
     (acc, [path, content]) => {
       const sandpackPath = path.startsWith('/') ? path.substring(1) : path;
@@ -160,87 +144,13 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
         )}
         ref={controlsRef}
       >
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" onClick={handleBack}>
-                <ArrowLeft className="h-4 w-4 mr-1" />
-                Back
-              </Button>
-              
-              <div className="flex-1 px-2">
-                <h1 className="text-lg font-semibold truncate">{prototype.name}</h1>
-                <p className="text-xs text-muted-foreground">{prototype.tech_stack}</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={toggleInfo}
-                title="Prototype Info"
-              >
-                <Info className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {}}
-                title="Share"
-              >
-                <Share2 className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {}}
-                title="Download"
-              >
-                <Download className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={toggleControlsVisibility}
-                title={controlsVisible ? "Hide Controls" : "Show Controls"}
-              >
-                {controlsVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </Button>
-            </div>
-          </div>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={handleBack}>
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Back
+          </Button>
           
-          {showInfo && (
-            <div className="bg-muted/30 p-2 rounded-md text-sm">
-              <div className="flex flex-wrap gap-x-6 gap-y-1">
-                <div className="flex items-center gap-1">
-                  <span className="text-muted-foreground">Created:</span>
-                  <span>{formatDate(prototype.created_at)}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-muted-foreground">Updated:</span>
-                  <span>{formatDate(prototype.updated_at)}</span>
-                </div>
-                {prototype.deployment_status && (
-                  <div className="flex items-center gap-1">
-                    <span className="text-muted-foreground">Status:</span>
-                    <span className={cn(
-                      prototype.deployment_status === 'deployed' ? "text-green-600" : 
-                      prototype.deployment_status === 'pending' ? "text-amber-600" : 
-                      "text-red-600"
-                    )}>
-                      {prototype.deployment_status.charAt(0).toUpperCase() + prototype.deployment_status.slice(1)}
-                    </span>
-                  </div>
-                )}
-              </div>
-              {prototype.description && (
-                <p className="mt-1 text-muted-foreground">{prototype.description}</p>
-              )}
-            </div>
-          )}
-
-          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="flex-1">
             <TabsList className="h-9">
               <TabsTrigger value="preview">
                 <Monitor className="h-4 w-4 mr-2" /> Preview
@@ -260,12 +170,37 @@ export function PrototypeViewer({ prototype, onBack }: PrototypeViewerProps) {
               onDeviceChange={handleDeviceChange}
             />
           )}
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {}}
+            title="Share"
+          >
+            <Share2 className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {}}
+            title="Download"
+          >
+            <Download className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={toggleControlsVisibility}
+            title={controlsVisible ? "Hide Controls" : "Show Controls"}
+          >
+            {controlsVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </Button>
         </div>
       </div>
 
       <div className="flex-1 relative">
         {activeTab === 'preview' && (
-          <div className="w-full h-full absolute inset-0 m-0 p-0 bg-gray-50 overflow-auto" ref={previewRef}>
+          <div className="w-full h-full absolute inset-0 m-0 p-4 bg-gray-50 overflow-auto" ref={previewRef}>
             <div className={getDevicePreviewClass()}>
               {prototype.deployment_url || prototype.deployment_status ? (
                 <PreviewWindow
