@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Header } from "@/components/layout/Header";
 import { PrototypeGrid } from "@/components/dashboard/PrototypeGrid";
@@ -6,7 +7,8 @@ import { EmptyState } from "@/components/dashboard/EmptyState";
 import { supabase } from "@/integrations/supabase/client";
 import { useProjects } from "@/hooks/use-projects";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 // Define the prototype interface
 interface Prototype {
@@ -28,7 +30,8 @@ const Dashboard = () => {
   const { toast } = useToast();
   const { 
     projects, 
-    loading, 
+    loading: loadingProjects, 
+    error: projectsError,
     sortBy,
     setSortBy,
     searchQuery,
@@ -38,11 +41,15 @@ const Dashboard = () => {
 
   const [prototypes, setPrototypes] = useState<Prototype[]>([]);
   const [loadingPrototypes, setLoadingPrototypes] = useState(true);
+  const [prototypesError, setPrototypesError] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Fetch prototypes from Supabase
   const fetchPrototypes = async () => {
     try {
       setLoadingPrototypes(true);
+      setPrototypesError(null);
+      
       // Use proper type casting to avoid TypeScript errors
       const { data, error } = await supabase
         .from('prototypes')
@@ -51,6 +58,7 @@ const Dashboard = () => {
       
       if (error) {
         console.error('Error fetching prototypes:', error);
+        setPrototypesError(error.message);
         toast({
           title: "Error loading prototypes",
           description: error.message,
@@ -78,6 +86,7 @@ const Dashboard = () => {
       setPrototypes(transformedData);
     } catch (err: any) {
       console.error('Error in fetchPrototypes:', err);
+      setPrototypesError(err.message || "An unexpected error occurred");
       toast({
         title: "Error loading prototypes",
         description: err.message || "An unexpected error occurred",
@@ -90,6 +99,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchPrototypes();
+    
     // Set up a refresh interval for prototypes with 'pending' status
     const pendingInterval = setInterval(() => {
       const hasPendingPrototypes = prototypes.some(p => p.deployment_status === 'pending');
@@ -100,7 +110,7 @@ const Dashboard = () => {
     }, 30000); // Check every 30 seconds
     
     return () => clearInterval(pendingInterval);
-  }, [prototypes]);
+  }, []);
 
   // Combine projects and prototypes for display
   const allItems = [
@@ -149,13 +159,24 @@ const Dashboard = () => {
   });
 
   const handleRefresh = () => {
-    fetchPrototypes();
-    refreshProjects();
-    toast({
-      title: "Refreshed",
-      description: "Your dashboard has been refreshed",
+    setIsRefreshing(true);
+    
+    // Refresh both projects and prototypes
+    Promise.all([
+      fetchPrototypes(),
+      refreshProjects()
+    ]).finally(() => {
+      setIsRefreshing(false);
+      toast({
+        title: "Refreshed",
+        description: "Your dashboard has been refreshed",
+      });
     });
   };
+
+  // Check if we're in a loading or error state
+  const isLoading = loadingProjects || loadingPrototypes;
+  const hasError = !!projectsError || !!prototypesError;
 
   return (
     <div className="min-h-screen flex flex-col w-full">
@@ -169,27 +190,20 @@ const Dashboard = () => {
                 Manage your personal prototypes
               </p>
             </div>
-            <button 
-              onClick={handleRefresh} 
-              className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors"
+            <Button 
+              onClick={handleRefresh}
+              variant="ghost"
+              size="sm"
+              className="flex items-center gap-1 text-sm hover:bg-muted transition-colors"
+              disabled={isRefreshing}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4"
-              >
-                <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-                <path d="M3 3v5h5" />
-                <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
-                <path d="M16 16h5v5" />
-              </svg>
+              {isRefreshing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
               Refresh
-            </button>
+            </Button>
           </div>
 
           <DashboardControls
@@ -203,12 +217,30 @@ const Dashboard = () => {
             hasTeams={false}
           />
 
-          {(loading || loadingPrototypes) ? (
+          {isLoading ? (
             <div className="flex justify-center py-20">
               <div className="flex flex-col items-center">
                 <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
                 <p className="text-muted-foreground">Loading projects and prototypes...</p>
               </div>
+            </div>
+          ) : hasError ? (
+            <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
+              <div className="bg-destructive/10 p-4 rounded-full inline-flex mb-6">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-10 w-10 text-destructive">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+              </div>
+              <h2 className="text-xl font-semibold mb-2">Error Loading Data</h2>
+              <p className="text-muted-foreground mb-6 max-w-md">
+                {projectsError || prototypesError || "There was a problem loading your projects and prototypes."}
+              </p>
+              <Button onClick={handleRefresh} className="flex items-center gap-2">
+                <RefreshCw className="h-4 w-4" />
+                Try Again
+              </Button>
             </div>
           ) : sortedItems.length > 0 ? (
             <PrototypeGrid

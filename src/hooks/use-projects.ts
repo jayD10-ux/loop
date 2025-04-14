@@ -64,7 +64,7 @@ export function useProjects() {
     try {
       console.log('Fetching personal projects for user ID:', userId);
       
-      // IMPORTANT: Only fetch personal projects - completely avoid team-related queries
+      // Simple direct query that avoids RLS policies completely
       const { data: projectsData, error: projectsError } = await supabase
         .from('projects')
         .select('*')
@@ -88,7 +88,7 @@ export function useProjects() {
       // Reset retry count on successful fetch
       setRetryCount(0);
     } catch (error: any) {
-      console.error("Error fetching dashboard data:", error);
+      console.error("Error fetching projects data:", error);
       
       // Implement exponential backoff for retries
       if (retryCount < 3) {
@@ -100,7 +100,7 @@ export function useProjects() {
           fetchData();
         }, retryDelay);
       } else {
-        setError(error.message || "Failed to load dashboard data");
+        setError(error.message || "Failed to load projects data");
         toast({
           title: "Failed to load data",
           description: "There was a problem loading your projects. Please try again later.",
@@ -120,7 +120,7 @@ export function useProjects() {
   
   // Add refreshProjects function to manually trigger data refresh
   const refreshProjects = () => {
-    fetchData();
+    return fetchData();
   };
   
   // Get filtered and sorted projects
