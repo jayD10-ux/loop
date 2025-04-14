@@ -119,7 +119,7 @@ export function PreviewIframe({
         ref={iframeRef}
         src={url}
         title={title}
-        className={`w-full h-full border-none ${className} ${error ? 'hidden' : ''}`}
+        className={`w-full h-full border-0 m-0 p-0 ${className} ${error ? 'hidden' : ''}`}
         sandbox={sandbox}
         onLoad={handleLoad}
         onError={handleError}
