@@ -7,8 +7,7 @@ import { EmptyState } from "@/components/dashboard/EmptyState";
 import { supabase } from "@/integrations/supabase/client";
 import { useProjects } from "@/hooks/use-projects";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 
 // Define the prototype interface
 interface Prototype {
@@ -193,32 +192,20 @@ const Dashboard = () => {
                 Manage your personal prototypes
               </p>
             </div>
-            <Button 
-              onClick={handleRefresh}
-              variant="ghost"
-              size="sm"
-              className="flex items-center gap-1 text-sm hover:bg-muted transition-colors"
-              disabled={isRefreshing}
-            >
-              {isRefreshing ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="h-4 w-4" />
-              )}
-              Refresh
-            </Button>
+            
+            <DashboardControls
+              teams={[]}
+              activeTeamId={null}
+              onTeamChange={() => {}}
+              sortBy={sortBy}
+              onSortChange={setSortBy}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              hasTeams={false}
+              onRefresh={handleRefresh}
+              isRefreshing={isRefreshing}
+            />
           </div>
-
-          <DashboardControls
-            teams={[]}
-            activeTeamId={null}
-            onTeamChange={() => {}}
-            sortBy={sortBy}
-            onSortChange={setSortBy}
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            hasTeams={false}
-          />
 
           {isLoading ? (
             <div className="flex justify-center py-20">

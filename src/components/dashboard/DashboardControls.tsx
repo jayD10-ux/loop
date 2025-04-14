@@ -1,7 +1,8 @@
 
-import { Search, SortDesc, SortAsc } from "lucide-react";
+import { Search, SortDesc, SortAsc, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface DashboardControlsProps {
   teams: any[];
@@ -12,6 +13,8 @@ interface DashboardControlsProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   hasTeams: boolean;
+  onRefresh: () => void;
+  isRefreshing: boolean;
 }
 
 export function DashboardControls({
@@ -19,33 +22,57 @@ export function DashboardControls({
   onSortChange,
   searchQuery,
   onSearchChange,
+  onRefresh,
+  isRefreshing
 }: DashboardControlsProps) {
   return (
-    <div className="flex flex-col md:flex-row justify-end gap-4 mb-6">
-      <div className="flex items-center gap-2">
-        <div className="relative w-full md:w-64">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search projects..."
-            className="pl-9"
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-          />
-        </div>
-        
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => onSortChange(sortBy === 'newest' ? 'oldest' : 'newest')}
-          title={sortBy === 'newest' ? "Newest first" : "Oldest first"}
-        >
-          {sortBy === 'newest' ? (
-            <SortDesc className="h-4 w-4" />
-          ) : (
-            <SortAsc className="h-4 w-4" />
-          )}
-        </Button>
+    <div className="flex items-center gap-2 mb-6">
+      <div className="relative w-48">
+        <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Search..."
+          className="pl-9 h-9"
+          value={searchQuery}
+          onChange={(e) => onSearchChange(e.target.value)}
+        />
       </div>
+      
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-9 w-9"
+            onClick={() => onSortChange(sortBy === 'newest' ? 'oldest' : 'newest')}
+          >
+            {sortBy === 'newest' ? (
+              <SortDesc className="h-4 w-4" />
+            ) : (
+              <SortAsc className="h-4 w-4" />
+            )}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">
+          {sortBy === 'newest' ? "Newest first" : "Oldest first"}
+        </TooltipContent>
+      </Tooltip>
+      
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-9 w-9"
+            onClick={onRefresh}
+            disabled={isRefreshing}
+          >
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">
+          Refresh
+        </TooltipContent>
+      </Tooltip>
     </div>
   );
 }

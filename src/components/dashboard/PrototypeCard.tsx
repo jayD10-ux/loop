@@ -3,8 +3,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useNavigate } from "react-router-dom";
-import { Code, FileCode, FileArchive, MessageSquare, ExternalLink, Clock, CheckCircle, AlertCircle, Pencil, Calendar } from "lucide-react";
-import { useState } from "react";
+import { Code, ExternalLink, Clock, CheckCircle, AlertCircle, Pencil, Calendar } from "lucide-react";
+import { useState, useEffect } from "react";
 import { format, isToday, isYesterday, isThisWeek } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -45,6 +45,18 @@ export function PrototypeCard({
   const [isHovered, setIsHovered] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [actualPreviewUrl, setActualPreviewUrl] = useState(thumbnailUrl);
+
+  useEffect(() => {
+    // Prioritize Figma preview or deployed preview URL over placeholders
+    if (figmaPreviewUrl) {
+      setActualPreviewUrl(figmaPreviewUrl);
+    } else if (previewUrl && status === 'deployed') {
+      setActualPreviewUrl(previewUrl);
+    } else {
+      setActualPreviewUrl(thumbnailUrl);
+    }
+  }, [figmaPreviewUrl, previewUrl, status, thumbnailUrl]);
 
   const handleCardClick = () => {
     navigate(`/prototype/${id}`);
@@ -101,10 +113,11 @@ export function PrototypeCard({
     }
   };
 
-  // Determine which image to show - prioritize actual previews over placeholders
-  const actualPreviewUrl = figmaPreviewUrl || (previewUrl && status === 'deployed') ? 
-    (figmaPreviewUrl || previewUrl) : 
-    thumbnailUrl;
+  // Reset image states when the preview URL changes
+  useEffect(() => {
+    setImageLoaded(false);
+    setImageError(false);
+  }, [actualPreviewUrl]);
 
   return (
     <Card 
