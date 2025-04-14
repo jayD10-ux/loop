@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Bell, User, Plus, LogOut, Upload, FileArchive, Code } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -134,6 +133,26 @@ export const Header = () => {
             <div className="flex items-center justify-center w-8 h-8 rounded-md bg-loop-blue text-white font-bold">L</div>
             <span className="text-xl font-semibold">Loop</span>
           </Link>
+          
+          {/* Navigation Links */}
+          <nav className="hidden md:flex items-center gap-4">
+            <Link 
+              to="/dashboard" 
+              className={`text-sm transition-colors hover:text-foreground/80 ${
+                location.pathname === "/dashboard" ? "font-medium text-foreground" : "text-foreground/60"
+              }`}
+            >
+              Dashboard
+            </Link>
+            <Link 
+              to="/community" 
+              className={`text-sm transition-colors hover:text-foreground/80 ${
+                location.pathname.startsWith("/community") ? "font-medium text-foreground" : "text-foreground/60"
+              }`}
+            >
+              Community
+            </Link>
+          </nav>
         </div>
         <div className="flex items-center gap-4">
           {isLoaded ? (

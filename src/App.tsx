@@ -14,6 +14,9 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
 import NotFound from "./pages/NotFound";
+import CommunityExplore from "./pages/CommunityExplore";
+import CommunityPrototypeView from "./pages/CommunityPrototypeView";
+import CommunitySubmit from "./pages/CommunitySubmit";
 
 const queryClient = new QueryClient();
 
@@ -26,12 +29,17 @@ const AppRoutes = () => {
         <Route path="/signup" element={<Signup />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         
+        {/* Community routes - publicly accessible */}
+        <Route path="/community" element={<CommunityExplore />} />
+        <Route path="/community/prototype/:id" element={<CommunityPrototypeView />} />
+        
         {/* Protected routes */}
         <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/add-prototype" element={<ProtectedRoute><AddPrototype /></ProtectedRoute>} />
         <Route path="/prototype/:id" element={<ProtectedRoute><PrototypeView /></ProtectedRoute>} />
         <Route path="/upload-prototype" element={<ProtectedRoute><PrototypeUpload /></ProtectedRoute>} />
+        <Route path="/community/submit" element={<ProtectedRoute><CommunitySubmit /></ProtectedRoute>} />
         
         {/* Redirect onboarding to dashboard */}
         <Route path="/onboarding" element={<ProtectedRoute><Navigate to="/dashboard" replace /></ProtectedRoute>} />
