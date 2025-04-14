@@ -79,6 +79,10 @@ export type Database = {
           deployment_status: string | null
           deployment_url: string | null
           description: string | null
+          figma_file_key: string | null
+          figma_file_name: string | null
+          figma_link: string | null
+          figma_preview_url: string | null
           file_path: string | null
           files: Json
           id: string
@@ -93,6 +97,10 @@ export type Database = {
           deployment_status?: string | null
           deployment_url?: string | null
           description?: string | null
+          figma_file_key?: string | null
+          figma_file_name?: string | null
+          figma_link?: string | null
+          figma_preview_url?: string | null
           file_path?: string | null
           files: Json
           id?: string
@@ -107,6 +115,10 @@ export type Database = {
           deployment_status?: string | null
           deployment_url?: string | null
           description?: string | null
+          figma_file_key?: string | null
+          figma_file_name?: string | null
+          figma_link?: string | null
+          figma_preview_url?: string | null
           file_path?: string | null
           files?: Json
           id?: string
