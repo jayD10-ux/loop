@@ -167,3 +167,14 @@ button:hover, a:hover {
 button:active, a:active {
   transform: scale(0.95);
 }
+
+/* Masonry Grid Layout */
+.masonry-grid_column {
+  padding-left: 0px; /* No padding needed since we have gap in the flex container */
+  background-clip: padding-box;
+}
+
+/* Style item inside masonry */
+.masonry-grid_column > div {
+  margin-bottom: 24px; /* Spacing between items */
+}

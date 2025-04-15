@@ -37,6 +37,23 @@ export function PrototypeCard({ prototype, className = "" }: PrototypeCardProps)
     return null;
   }
 
+  // Create varying heights for better masonry layout
+  // Use a deterministic approach based on prototype ID
+  const getCardHeight = () => {
+    if (!prototype.id) return "aspect-square"; // Default is square
+    
+    // Use the first character of the ID as a simple hash
+    const firstChar = prototype.id.charAt(0);
+    const charCode = firstChar.charCodeAt(0);
+    
+    // 70% chance of square, 30% chance of rectangle
+    if (charCode % 10 < 7) {
+      return "aspect-square"; // Standard square card
+    } else {
+      return "aspect-[3/4]"; // Taller card
+    }
+  };
+
   // Ensure all required fields are present with fallbacks
   const safePrototype = {
     id: prototype.id || "unknown",
@@ -141,7 +158,7 @@ export function PrototypeCard({ prototype, className = "" }: PrototypeCardProps)
   return (
     <Link to={`/prototypes/${safePrototype.id}`}>
       <div className="h-full rounded-lg overflow-hidden border border-border bg-background shadow-sm hover:shadow-md transition-shadow">
-        <div className="w-full aspect-square relative overflow-hidden">
+        <div className={`w-full relative overflow-hidden ${getCardHeight()}`}>
           {getPreviewImage()}
         </div>
         

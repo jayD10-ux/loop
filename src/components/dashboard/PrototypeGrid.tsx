@@ -53,14 +53,39 @@ export function PrototypeGrid({ activeTab, searchQuery = "", prototypes = [] }: 
     setDisplayPrototypes(validPrototypes);
   }, [activeTab, searchQuery, prototypes]);
 
+  // Function to distribute prototypes into columns for masonry effect
+  const getGridColumns = () => {
+    if (displayPrototypes.length === 0) return null;
+    
+    // Create columns for masonry layout
+    const columns = [[], [], []];
+    
+    displayPrototypes.forEach((prototype, index) => {
+      // Distribute items across columns
+      columns[index % columns.length].push(prototype);
+    });
+    
+    return columns;
+  };
+
+  const columns = getGridColumns();
+
   return (
     <div className="w-full py-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {displayPrototypes.map((prototype) => (
-          <PrototypeCard key={prototype.id} prototype={prototype} />
-        ))}
-      </div>
-      {displayPrototypes.length === 0 && (
+      {columns ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {columns.map((column, columnIndex) => (
+            <div key={columnIndex} className="flex flex-col gap-6">
+              {column.map((prototype) => (
+                <PrototypeCard 
+                  key={prototype.id} 
+                  prototype={prototype} 
+                />
+              ))}
+            </div>
+          ))}
+        </div>
+      ) : (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <h3 className="text-xl font-semibold mb-2">No prototypes found</h3>
           <p className="text-muted-foreground mb-4">
