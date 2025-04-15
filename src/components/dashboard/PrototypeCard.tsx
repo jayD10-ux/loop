@@ -1,285 +1,178 @@
 
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useNavigate } from "react-router-dom";
-import { Code, ExternalLink, Clock, CheckCircle, AlertCircle, Pencil, Calendar } from "lucide-react";
-import { useState, useEffect } from "react";
-import { format, isToday, isYesterday, isThisWeek } from "date-fns";
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { formatDistanceToNow } from "date-fns";
+import { 
+  Card, 
+  CardContent, 
+  CardHeader, 
+  CardTitle, 
+  CardDescription, 
+  CardFooter 
+} from "@/components/ui/card";
+import { 
+  FileArchive, 
+  ExternalLink, 
+  Code, 
+  FileCode, 
+  Figma,
+  Clock,
+  MessageSquareText,
+  Loader2
+} from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Prototype } from "@/types/prototype";
 
 interface PrototypeCardProps {
-  id: string;
-  title: string;
-  description?: string;
-  thumbnailUrl: string;
-  updatedAt: string;
-  commentCount?: number;
-  tags?: string[];
-  source: "figma" | "github" | "zip" | "code";
-  isShared?: boolean;
-  sharedBy?: { name: string; avatarUrl: string };
-  isTeam?: boolean;
-  status?: 'pending' | 'deployed' | 'failed';
-  previewUrl?: string;
-  figmaPreviewUrl?: string | null;
+  prototype: Prototype;
+  className?: string;
 }
 
-export function PrototypeCard({
-  id,
-  title,
-  description,
-  thumbnailUrl,
-  updatedAt,
-  commentCount = 0,
-  tags = [],
-  source,
-  isShared,
-  sharedBy,
-  isTeam,
-  status,
-  previewUrl,
-  figmaPreviewUrl
-}: PrototypeCardProps) {
-  const navigate = useNavigate();
-  const [isHovered, setIsHovered] = useState(false);
-  const [imageLoaded, setImageLoaded] = useState(false);
-  const [imageError, setImageError] = useState(false);
-  const [actualPreviewUrl, setActualPreviewUrl] = useState(thumbnailUrl);
-
-  useEffect(() => {
-    // Prioritize Figma preview or deployed preview URL over placeholders
-    if (figmaPreviewUrl) {
-      setActualPreviewUrl(figmaPreviewUrl);
-    } else if (previewUrl && status === 'deployed') {
-      setActualPreviewUrl(previewUrl);
-    } else {
-      setActualPreviewUrl(thumbnailUrl);
-    }
-  }, [figmaPreviewUrl, previewUrl, status, thumbnailUrl]);
-
-  const handleCardClick = () => {
-    navigate(`/prototype/${id}`);
-  };
-
-  const handlePreviewClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (previewUrl) {
-      window.open(previewUrl, '_blank');
-    }
-  };
-
-  const getStatusIcon = () => {
-    switch (status) {
-      case 'pending':
-        return <Clock className="h-4 w-4 text-amber-500" />;
-      case 'deployed':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'failed':
-        return <AlertCircle className="h-4 w-4 text-destructive" />;
+export function PrototypeCard({ prototype, className = "" }: PrototypeCardProps) {
+  const [previewLoaded, setPreviewLoaded] = useState(false);
+  const [previewError, setPreviewError] = useState(false);
+  
+  const getDeploymentStatus = () => {
+    if (!prototype.deployment_status) return null;
+    
+    switch (prototype.deployment_status) {
+      case "pending":
+        return (
+          <div className="flex items-center text-sm text-amber-500">
+            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+            <span>Processing</span>
+          </div>
+        );
+      case "deployed":
+        return (
+          <div className="flex items-center text-sm text-green-500">
+            <div className="h-2 w-2 rounded-full bg-green-500 mr-1.5"></div>
+            <span>Live</span>
+          </div>
+        );
+      case "failed":
+        return (
+          <div className="flex items-center text-sm text-red-500">
+            <div className="h-2 w-2 rounded-full bg-red-500 mr-1.5"></div>
+            <span>Failed</span>
+          </div>
+        );
       default:
         return null;
     }
   };
 
-  const getStatusText = () => {
-    switch (status) {
-      case 'pending':
-        return 'Deployment in progress';
-      case 'deployed':
-        return 'Deployed successfully';
-      case 'failed':
-        return 'Deployment failed';
-      default:
-        return '';
+  const getPreviewImage = () => {
+    // Priority order for preview images:
+    // 1. Figma preview URL
+    // 2. Deployment URL 
+    // 3. Tech stack icon (fallback)
+    
+    if (previewError) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full bg-muted/30">
+          <FileCode className="h-12 w-12 text-muted-foreground mb-2" />
+          <span className="text-sm text-muted-foreground">Preview not available</span>
+        </div>
+      );
     }
-  };
-  
-  const formatDate = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      
-      if (isToday(date)) {
-        return `Today at ${format(date, 'h:mm a')}`;
-      } else if (isYesterday(date)) {
-        return `Yesterday at ${format(date, 'h:mm a')}`;
-      } else if (isThisWeek(date)) {
-        return format(date, 'EEEE');
-      } else {
-        return format(date, 'MMM d, yyyy');
-      }
-    } catch (error) {
-      return dateString;
+
+    // For Figma preview
+    if (prototype.figma_preview_url && !previewError) {
+      return (
+        <>
+          {!previewLoaded && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Loader2 className="h-8 w-8 animate-spin text-primary/70" />
+            </div>
+          )}
+          <img
+            src={prototype.figma_preview_url}
+            alt={prototype.name}
+            className={`w-full h-full object-cover transition-opacity duration-300 ${previewLoaded ? 'opacity-100' : 'opacity-0'}`}
+            onLoad={() => setPreviewLoaded(true)}
+            onError={() => setPreviewError(true)}
+          />
+        </>
+      );
     }
+    
+    // For deployment URL - use iframe
+    if (prototype.deployment_url && !previewError) {
+      return (
+        <>
+          {!previewLoaded && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Loader2 className="h-8 w-8 animate-spin text-primary/70" />
+            </div>
+          )}
+          <iframe
+            src={prototype.deployment_url}
+            title={prototype.name}
+            className={`w-full h-full border-0 transition-opacity duration-300 ${previewLoaded ? 'opacity-100' : 'opacity-0'}`}
+            onLoad={() => setPreviewLoaded(true)}
+            onError={() => setPreviewError(true)}
+            sandbox="allow-scripts allow-same-origin"
+          />
+        </>
+      );
+    }
+    
+    // Fallback based on tech stack
+    return (
+      <div className="flex flex-col items-center justify-center h-full bg-muted/30">
+        {prototype.tech_stack === "react" ? (
+          <Code className="h-12 w-12 text-sky-500 mb-2" />
+        ) : prototype.tech_stack === "vanilla" ? (
+          <FileCode className="h-12 w-12 text-amber-500 mb-2" />
+        ) : prototype.tech_stack === "external-url" ? (
+          <ExternalLink className="h-12 w-12 text-green-500 mb-2" />
+        ) : prototype.tech_stack === "zip-package" ? (
+          <FileArchive className="h-12 w-12 text-violet-500 mb-2" />
+        ) : (
+          <FileCode className="h-12 w-12 text-muted-foreground mb-2" />
+        )}
+        <span className="text-sm text-muted-foreground capitalize">
+          {prototype.tech_stack?.replace('-', ' ') || "Unknown"}
+        </span>
+      </div>
+    );
   };
 
-  // Reset image states when the preview URL changes
-  useEffect(() => {
-    setImageLoaded(false);
-    setImageError(false);
-  }, [actualPreviewUrl]);
+  const formattedDate = prototype.created_at 
+    ? formatDistanceToNow(new Date(prototype.created_at), { addSuffix: true })
+    : "Recently";
 
   return (
-    <Card 
-      className="overflow-hidden transition-all hover:shadow-md cursor-pointer group border-border"
-      onClick={handleCardClick}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <div className="relative h-48 overflow-hidden bg-muted">
-        {!imageLoaded && !imageError && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <Skeleton className="h-full w-full" />
-          </div>
-        )}
-        
-        {imageError ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-muted">
-            <div className="text-center p-4">
-              <div className="mx-auto h-10 w-10 text-muted-foreground mb-2">
-                {source === "figma" ? (
-                  <svg viewBox="0 0 38 57" className="h-10 w-10 mx-auto">
-                    <path fill="#1ABCFE" d="M19 28.5a9.5 9.5 0 1 1 19 0 9.5 9.5 0 0 1-19 0z"></path>
-                    <path fill="#0ACF83" d="M0 47.5A9.5 9.5 0 0 1 9.5 38H19v9.5a9.5 9.5 0 1 1-19 0z"></path>
-                    <path fill="#FF7262" d="M19 0v19h9.5a9.5 9.5 0 1 0 0-19H19z"></path>
-                    <path fill="#F24E1E" d="M0 9.5A9.5 9.5 0 0 0 9.5 19H19V0H9.5A9.5 9.5 0 0 0 0 9.5z"></path>
-                    <path fill="#A259FF" d="M0 28.5A9.5 9.5 0 0 0 9.5 38H19V19H9.5A9.5 9.5 0 0 0 0 28.5z"></path>
-                  </svg>
-                ) : (
-                  <Code className="h-10 w-10 mx-auto" />
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground">{title}</p>
+    <Link to={`/prototypes/${prototype.id}`}>
+      <Card className={`h-full hover:shadow-md transition-shadow overflow-hidden ${className}`}>
+        <div className="w-full h-40 relative overflow-hidden bg-muted">
+          {getPreviewImage()}
+          
+          {prototype.figma_link && (
+            <div className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm rounded p-1.5">
+              <Figma className="h-4 w-4 text-blue-500" />
             </div>
-          </div>
-        ) : (
-          <img 
-            src={actualPreviewUrl}
-            alt={title}
-            className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ${!imageLoaded ? 'opacity-0' : 'opacity-100'}`}
-            onLoad={() => setImageLoaded(true)}
-            onError={() => setImageError(true)}
-          />
-        )}
-
-        <div className="absolute top-2 right-2 flex gap-2">
-          {source === "figma" && (
-            <Badge variant="outline" className="bg-white/80 backdrop-blur-sm">
-              <svg className="h-3 w-3 mr-1" viewBox="0 0 38 57" xmlns="http://www.w3.org/2000/svg">
-                <path fill="#1ABCFE" d="M19 28.5a9.5 9.5 0 1 1 19 0 9.5 9.5 0 0 1-19 0z"></path>
-                <path fill="#0ACF83" d="M0 47.5A9.5 9.5 0 0 1 9.5 38H19v9.5a9.5 9.5 0 1 1-19 0z"></path>
-                <path fill="#FF7262" d="M19 0v19h9.5a9.5 9.5 0 1 0 0-19H19z"></path>
-                <path fill="#F24E1E" d="M0 9.5A9.5 9.5 0 0 0 9.5 19H19V0H9.5A9.5 9.5 0 0 0 0 9.5z"></path>
-                <path fill="#A259FF" d="M0 28.5A9.5 9.5 0 0 0 9.5 38H19V19H9.5A9.5 9.5 0 0 0 0 28.5z"></path>
-              </svg>
-              Figma
-            </Badge>
-          )}
-          {source === "code" && (
-            <Badge variant="outline" className="bg-white/80 backdrop-blur-sm">
-              <Code className="h-3 w-3 mr-1" />
-              Code
-            </Badge>
-          )}
-          {isTeam && (
-            <Badge variant="outline" className="bg-white/80 backdrop-blur-sm">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                <circle cx="9" cy="7" r="4"></circle>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-              </svg>
-              Team
-            </Badge>
           )}
         </div>
         
-        {isHovered && (
-          <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-            <div className="flex gap-3">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button className="p-2 bg-white rounded-full hover:bg-gray-100 transition-colors" onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/prototype/${id}/edit`);
-                  }}>
-                    <Pencil className="h-5 w-5 text-gray-700" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>Edit</TooltipContent>
-              </Tooltip>
-              
-              {previewUrl && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button className="p-2 bg-white rounded-full hover:bg-gray-100 transition-colors" onClick={handlePreviewClick}>
-                      <ExternalLink className="h-5 w-5 text-gray-700" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent>View preview</TooltipContent>
-                </Tooltip>
-              )}
-            </div>
+        <CardHeader className="pb-2">
+          <div className="flex justify-between items-start">
+            <CardTitle className="line-clamp-1 text-base">{prototype.name}</CardTitle>
+            {getDeploymentStatus()}
           </div>
-        )}
-      </div>
-      
-      <CardContent className="p-4">
-        <div className="flex justify-between items-start mb-2">
-          <h3 className="font-semibold text-lg line-clamp-1">{title}</h3>
-          {status && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="flex items-center">
-                  {getStatusIcon()}
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="top">
-                <p>{getStatusText()}</p>
-              </TooltipContent>
-            </Tooltip>
+          {prototype.description && (
+            <CardDescription className="line-clamp-2 text-xs">
+              {prototype.description}
+            </CardDescription>
           )}
-        </div>
-        <p className="text-muted-foreground text-sm line-clamp-2 mb-3 min-h-[2.5rem]">
-          {description || "No description provided"}
-        </p>
-        <div className="flex flex-wrap gap-1 mt-2">
-          {tags.map((tag, index) => (
-            <Badge key={index} variant="secondary" className="text-xs">
-              {tag}
-            </Badge>
-          ))}
-        </div>
-      </CardContent>
-      <CardFooter className="px-4 py-3 bg-muted/30 flex justify-between items-center text-xs text-muted-foreground">
-        <div className="flex items-center">
-          <Calendar className="h-3 w-3 mr-1" />
-          {formatDate(updatedAt)}
-        </div>
-        <div className="flex items-center gap-3">
-          {commentCount > 0 && (
-            <div className="flex items-center">
-              <MessageSquare className="h-3 w-3 mr-1" />
-              {commentCount}
-            </div>
-          )}
-          {previewUrl && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button 
-                  onClick={handlePreviewClick}
-                  className="text-primary hover:text-primary/80 transition-colors"
-                >
-                  <ExternalLink className="h-3 w-3" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top">
-                <p>Open live preview</p>
-              </TooltipContent>
-            </Tooltip>
-          )}
-        </div>
-      </CardFooter>
-    </Card>
+        </CardHeader>
+        
+        <CardFooter className="pt-0 text-xs text-muted-foreground flex items-center">
+          <Clock className="h-3 w-3 mr-1 flex-shrink-0" />
+          <span className="truncate">{formattedDate}</span>
+        </CardFooter>
+      </Card>
+    </Link>
   );
 }

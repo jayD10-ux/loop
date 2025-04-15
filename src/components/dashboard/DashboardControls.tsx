@@ -1,78 +1,89 @@
 
-import { Search, SortDesc, SortAsc, RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Search, ArrowUpDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 
 interface DashboardControlsProps {
-  teams: any[];
-  activeTeamId: string | null;
-  onTeamChange: (teamId: string | null) => void;
-  sortBy: 'newest' | 'oldest';
-  onSortChange: (sort: 'newest' | 'oldest') => void;
-  searchQuery: string;
-  onSearchChange: (query: string) => void;
-  hasTeams: boolean;
-  onRefresh: () => void;
-  isRefreshing: boolean;
+  searchTerm: string;
+  onSearchChange: (value: string) => void;
+  sortOrder: "newest" | "oldest" | "a-z" | "z-a";
+  onSortChange: (value: "newest" | "oldest" | "a-z" | "z-a") => void;
 }
 
 export function DashboardControls({
-  sortBy,
-  onSortChange,
-  searchQuery,
+  searchTerm,
   onSearchChange,
-  onRefresh,
-  isRefreshing
+  sortOrder,
+  onSortChange,
 }: DashboardControlsProps) {
+  const getSortOrderLabel = () => {
+    switch (sortOrder) {
+      case "newest":
+        return "Newest first";
+      case "oldest":
+        return "Oldest first";
+      case "a-z":
+        return "A to Z";
+      case "z-a":
+        return "Z to A";
+      default:
+        return "Sort";
+    }
+  };
+
   return (
-    <div className="flex items-center gap-2 mb-6">
-      <div className="relative w-48">
-        <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+    <div className="flex items-center gap-2">
+      <div className="relative w-full max-w-xs">
+        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Search..."
-          className="pl-9 h-9"
-          value={searchQuery}
+          type="search"
+          placeholder="Search prototypes..."
+          className="pl-8 h-9"
+          value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
         />
       </div>
       
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-9 w-9"
-            onClick={() => onSortChange(sortBy === 'newest' ? 'oldest' : 'newest')}
-          >
-            {sortBy === 'newest' ? (
-              <SortDesc className="h-4 w-4" />
-            ) : (
-              <SortAsc className="h-4 w-4" />
-            )}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="icon" className="h-9 w-9">
+            <ArrowUpDown className="h-4 w-4" />
+            <span className="sr-only">{getSortOrderLabel()}</span>
           </Button>
-        </TooltipTrigger>
-        <TooltipContent side="bottom">
-          {sortBy === 'newest' ? "Newest first" : "Oldest first"}
-        </TooltipContent>
-      </Tooltip>
-      
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-9 w-9"
-            onClick={onRefresh}
-            disabled={isRefreshing}
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem 
+            onClick={() => onSortChange("newest")}
+            className={sortOrder === "newest" ? "bg-accent" : ""}
           >
-            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="bottom">
-          Refresh
-        </TooltipContent>
-      </Tooltip>
+            Newest first
+          </DropdownMenuItem>
+          <DropdownMenuItem 
+            onClick={() => onSortChange("oldest")}
+            className={sortOrder === "oldest" ? "bg-accent" : ""}
+          >
+            Oldest first
+          </DropdownMenuItem>
+          <DropdownMenuItem 
+            onClick={() => onSortChange("a-z")}
+            className={sortOrder === "a-z" ? "bg-accent" : ""}
+          >
+            A to Z
+          </DropdownMenuItem>
+          <DropdownMenuItem 
+            onClick={() => onSortChange("z-a")}
+            className={sortOrder === "z-a" ? "bg-accent" : ""}
+          >
+            Z to A
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }
