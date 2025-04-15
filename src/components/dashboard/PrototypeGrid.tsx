@@ -13,9 +13,18 @@ export function PrototypeGrid({ activeTab, searchQuery = "", prototypes = [] }: 
   const [displayPrototypes, setDisplayPrototypes] = useState<Prototype[]>([]);
 
   useEffect(() => {
-    // Ensure prototypes is an array before setting it
+    // Ensure prototypes is an array and all items are valid
     if (Array.isArray(prototypes)) {
-      setDisplayPrototypes(prototypes);
+      // Filter out any invalid prototypes (undefined, null, or missing required fields)
+      const validPrototypes = prototypes.filter(
+        (p): p is Prototype => 
+          !!p && 
+          typeof p === 'object' && 
+          typeof p.id === 'string' && 
+          typeof p.name === 'string'
+      );
+      
+      setDisplayPrototypes(validPrototypes);
     } else {
       console.error("PrototypeGrid received non-array prototypes:", prototypes);
       setDisplayPrototypes([]);
