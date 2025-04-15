@@ -129,7 +129,7 @@ const Dashboard = () => {
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <TabNavigation 
               activeTab={activeTab} 
-              onTabChange={setActiveTab} 
+              onTabChange={(tab: "all" | "yours" | "team") => setActiveTab(tab)} 
             />
             <DashboardControls
               searchTerm={searchTerm}
@@ -140,7 +140,10 @@ const Dashboard = () => {
           </div>
           
           {activeTab === "team" && (
-            <TeamSelector activeTeam={activeTeam} onTeamChange={setActiveTeam} />
+            <TeamSelector 
+              activeTeamId={activeTeam} 
+              onTeamChange={(teamId: string | null) => setActiveTeam(teamId)} 
+            />
           )}
           
           {loading ? (
@@ -153,9 +156,15 @@ const Dashboard = () => {
               ))}
             </div>
           ) : sortedAndFilteredPrototypes().length > 0 ? (
-            <PrototypeGrid prototypes={sortedAndFilteredPrototypes()} />
+            <PrototypeGrid 
+              activeTab={activeTab} 
+              searchQuery={searchTerm}
+              prototypes={sortedAndFilteredPrototypes()} 
+            />
           ) : (
-            <EmptyState onAddClick={handleAddPrototype} />
+            <EmptyState 
+              onAddClick={handleAddPrototype} 
+            />
           )}
         </div>
       </main>
