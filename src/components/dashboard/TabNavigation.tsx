@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -13,8 +12,8 @@ export function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
   };
 
   return (
-    <div className="py-4 border-b">
-      <div className="container">
+    <div className="">
+      <div className="w-full">
         <Tabs defaultValue={activeTab} value={activeTab} onValueChange={handleTabChange}>
           <TabsList>
             <TabsTrigger value="all">All Prototypes</TabsTrigger>
