@@ -32,45 +32,29 @@ export function PrototypeCard({ prototype, className = "" }: PrototypeCardProps)
   const [previewLoaded, setPreviewLoaded] = useState(false);
   const [previewError, setPreviewError] = useState(false);
   
-  // Enhanced validation and logging
-  console.log("PrototypeCard received prototype:", prototype);
-  
-  // Early return with detailed validation
-  if (!prototype) {
-    console.error("PrototypeCard received undefined prototype");
-    return (
-      <Card className={`h-full ${className}`}>
-        <CardHeader>
-          <CardTitle>Error: Invalid prototype data</CardTitle>
-        </CardHeader>
-      </Card>
-    );
+  // Pre-validation to prevent undefined errors
+  if (!prototype || typeof prototype !== 'object') {
+    console.error("PrototypeCard received invalid prototype:", prototype);
+    return null;
   }
-  
-  // Check for required fields with detailed logging
-  if (!prototype.id || !prototype.name) {
-    console.error("PrototypeCard received prototype with missing required fields:", prototype);
-    return (
-      <Card className={`h-full ${className}`}>
-        <CardHeader>
-          <CardTitle>Error: Incomplete prototype data</CardTitle>
-          <CardDescription>
-            {prototype.id ? "" : "Missing ID. "}
-            {prototype.name ? "" : "Missing name. "}
-          </CardDescription>
-        </CardHeader>
-      </Card>
-    );
-  }
-  
-  if (!prototype.created_at) {
-    console.warn("PrototypeCard: prototype missing created_at field:", prototype);
-  }
+
+  // Ensure all required fields are present with fallbacks
+  const safePrototype = {
+    id: prototype.id || "unknown",
+    name: prototype.name || "Untitled Prototype",
+    description: prototype.description || null,
+    tech_stack: prototype.tech_stack || "unknown",
+    created_at: prototype.created_at || new Date().toISOString(),
+    deployment_status: prototype.deployment_status || null,
+    deployment_url: prototype.deployment_url || null,
+    figma_link: prototype.figma_link || null,
+    figma_preview_url: prototype.figma_preview_url || null,
+  };
   
   const getDeploymentStatus = () => {
-    if (!prototype.deployment_status) return null;
+    if (!safePrototype.deployment_status) return null;
     
-    switch (prototype.deployment_status) {
+    switch (safePrototype.deployment_status) {
       case "pending":
         return (
           <div className="flex items-center text-sm text-amber-500">
@@ -113,7 +97,7 @@ export function PrototypeCard({ prototype, className = "" }: PrototypeCardProps)
     }
 
     // For Figma preview
-    if (prototype.figma_preview_url && !previewError) {
+    if (safePrototype.figma_preview_url && !previewError) {
       return (
         <>
           {!previewLoaded && (
@@ -122,8 +106,8 @@ export function PrototypeCard({ prototype, className = "" }: PrototypeCardProps)
             </div>
           )}
           <img
-            src={prototype.figma_preview_url}
-            alt={prototype.name}
+            src={safePrototype.figma_preview_url}
+            alt={safePrototype.name}
             className={`w-full h-full object-cover transition-opacity duration-300 ${previewLoaded ? 'opacity-100' : 'opacity-0'}`}
             onLoad={() => setPreviewLoaded(true)}
             onError={() => setPreviewError(true)}
@@ -133,7 +117,7 @@ export function PrototypeCard({ prototype, className = "" }: PrototypeCardProps)
     }
     
     // For deployment URL - use iframe
-    if (prototype.deployment_url && !previewError) {
+    if (safePrototype.deployment_url && !previewError) {
       return (
         <>
           {!previewLoaded && (
@@ -142,8 +126,8 @@ export function PrototypeCard({ prototype, className = "" }: PrototypeCardProps)
             </div>
           )}
           <iframe
-            src={prototype.deployment_url}
-            title={prototype.name}
+            src={safePrototype.deployment_url}
+            title={safePrototype.name}
             className={`w-full h-full border-0 transition-opacity duration-300 ${previewLoaded ? 'opacity-100' : 'opacity-0'}`}
             onLoad={() => setPreviewLoaded(true)}
             onError={() => setPreviewError(true)}
@@ -156,36 +140,41 @@ export function PrototypeCard({ prototype, className = "" }: PrototypeCardProps)
     // Fallback based on tech stack
     return (
       <div className="flex flex-col items-center justify-center h-full bg-muted/30">
-        {prototype.tech_stack === "react" ? (
+        {safePrototype.tech_stack === "react" ? (
           <Code className="h-12 w-12 text-sky-500 mb-2" />
-        ) : prototype.tech_stack === "vanilla" ? (
+        ) : safePrototype.tech_stack === "vanilla" ? (
           <FileCode className="h-12 w-12 text-amber-500 mb-2" />
-        ) : prototype.tech_stack === "external-url" ? (
+        ) : safePrototype.tech_stack === "external-url" ? (
           <ExternalLink className="h-12 w-12 text-green-500 mb-2" />
-        ) : prototype.tech_stack === "zip-package" ? (
+        ) : safePrototype.tech_stack === "zip-package" ? (
           <FileArchive className="h-12 w-12 text-violet-500 mb-2" />
         ) : (
           <FileCode className="h-12 w-12 text-muted-foreground mb-2" />
         )}
         <span className="text-sm text-muted-foreground capitalize">
-          {prototype.tech_stack?.replace('-', ' ') || "Unknown"}
+          {safePrototype.tech_stack?.replace('-', ' ') || "Unknown"}
         </span>
       </div>
     );
   };
 
-  // Safely format the date with fallback and validation
-  const formattedDate = prototype.created_at 
-    ? formatDistanceToNow(new Date(prototype.created_at), { addSuffix: true })
-    : "Recently";
+  // Safely format the date with validation and fallback
+  let formattedDate = "Recently";
+  try {
+    if (safePrototype.created_at) {
+      formattedDate = formatDistanceToNow(new Date(safePrototype.created_at), { addSuffix: true });
+    }
+  } catch (error) {
+    console.error("Error formatting date:", error, safePrototype.created_at);
+  }
 
   return (
-    <Link to={`/prototypes/${prototype.id}`}>
+    <Link to={`/prototypes/${safePrototype.id}`}>
       <Card className={`h-full hover:shadow-md transition-shadow overflow-hidden ${className}`}>
         <div className="w-full h-40 relative overflow-hidden bg-muted">
           {getPreviewImage()}
           
-          {prototype.figma_link && (
+          {safePrototype.figma_link && (
             <div className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm rounded p-1.5">
               <Figma className="h-4 w-4 text-blue-500" />
             </div>
@@ -194,12 +183,12 @@ export function PrototypeCard({ prototype, className = "" }: PrototypeCardProps)
         
         <CardHeader className="pb-2">
           <div className="flex justify-between items-start">
-            <CardTitle className="line-clamp-1 text-base">{prototype.name || "Untitled Prototype"}</CardTitle>
+            <CardTitle className="line-clamp-1 text-base">{safePrototype.name}</CardTitle>
             {getDeploymentStatus()}
           </div>
-          {prototype.description && (
+          {safePrototype.description && (
             <CardDescription className="line-clamp-2 text-xs">
-              {prototype.description}
+              {safePrototype.description}
             </CardDescription>
           )}
         </CardHeader>

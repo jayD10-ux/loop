@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Header } from "@/components/layout/Header";
@@ -66,19 +66,32 @@ const Dashboard = () => {
         return;
       }
       
-      console.log("Fetched prototypes:", data);
+      console.log("Fetched raw prototypes from Supabase:", data);
       
       if (data) {
-        // Ensure all required fields are present
-        const validPrototypes = (data as Prototype[]).map(p => ({
-          ...p,
-          // Ensure required fields have default values
-          created_at: p.created_at || new Date().toISOString(),
-          updated_at: p.updated_at || new Date().toISOString(),
-          description: p.description || null,
-          files: p.files || {}
-        }));
+        // Add validation and ensure required fields 
+        const validPrototypes = (data as any[])
+          .filter(p => p && typeof p === 'object' && p.id && p.name)
+          .map(p => ({
+            id: p.id,
+            name: p.name,
+            description: p.description || null,
+            tech_stack: p.tech_stack || 'unknown',
+            created_by: p.created_by,
+            created_at: p.created_at || new Date().toISOString(),
+            updated_at: p.updated_at || new Date().toISOString(),
+            files: p.files || {},
+            deployment_status: p.deployment_status || null,
+            deployment_url: p.deployment_url || null,
+            preview_url: p.preview_url || null,
+            file_path: p.file_path || null,
+            figma_link: p.figma_link || null,
+            figma_file_key: p.figma_file_key || null,
+            figma_file_name: p.figma_file_name || null,
+            figma_preview_url: p.figma_preview_url || null
+          }));
         
+        console.log("Processed and validated prototypes:", validPrototypes);
         setPrototypes(validPrototypes);
       } else {
         setPrototypes([]);
@@ -91,29 +104,11 @@ const Dashboard = () => {
     }
   };
 
-  const sortedAndFilteredPrototypes = () => {
-    console.log("Dashboard.sortedAndFilteredPrototypes - raw prototypes:", prototypes);
+  const sortedAndFilteredPrototypes = useMemo(() => {
+    console.log("Computing sortedAndFilteredPrototypes with prototypes:", prototypes);
     
-    if (!prototypes) {
-      console.error("sortedAndFilteredPrototypes received undefined prototypes");
+    if (!prototypes || !Array.isArray(prototypes) || prototypes.length === 0) {
       return [];
-    }
-    
-    if (!Array.isArray(prototypes)) {
-      console.error("prototypes is not an array:", prototypes);
-      return [];
-    }
-    
-    // Check for invalid prototype entries
-    const invalidEntries = prototypes.filter(p => !p || typeof p !== 'object' || !p.name);
-    if (invalidEntries.length > 0) {
-      console.warn("sortedAndFilteredPrototypes found invalid entries:", invalidEntries);
-    }
-    
-    // Check for missing created_at fields
-    const missingCreatedAt = prototypes.filter(p => p && typeof p === 'object' && !p.created_at);
-    if (missingCreatedAt.length > 0) {
-      console.warn("sortedAndFilteredPrototypes found entries missing created_at:", missingCreatedAt);
     }
     
     let filtered = [...prototypes];
@@ -129,40 +124,35 @@ const Dashboard = () => {
     }
     
     // Sort with additional null checks
-    const result = (() => {
-      switch (sortOrder) {
-        case "newest":
-          return filtered.sort((a, b) => {
-            if (!a || !a.created_at) return 1;
-            if (!b || !b.created_at) return -1;
-            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-          });
-        case "oldest":
-          return filtered.sort((a, b) => {
-            if (!a || !a.created_at) return 1;
-            if (!b || !b.created_at) return -1;
-            return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-          });
-        case "a-z":
-          return filtered.sort((a, b) => {
-            if (!a || !a.name) return 1;
-            if (!b || !b.name) return -1;
-            return a.name.localeCompare(b.name);
-          });
-        case "z-a":
-          return filtered.sort((a, b) => {
-            if (!a || !a.name) return 1;
-            if (!b || !b.name) return -1;
-            return b.name.localeCompare(a.name);
-          });
-        default:
-          return filtered;
-      }
-    })();
-    
-    console.log("Dashboard.sortedAndFilteredPrototypes - result:", result);
-    return result;
-  };
+    switch (sortOrder) {
+      case "newest":
+        return filtered.sort((a, b) => {
+          if (!a || !a.created_at) return 1;
+          if (!b || !b.created_at) return -1;
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        });
+      case "oldest":
+        return filtered.sort((a, b) => {
+          if (!a || !a.created_at) return 1;
+          if (!b || !b.created_at) return -1;
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        });
+      case "a-z":
+        return filtered.sort((a, b) => {
+          if (!a || !a.name) return 1;
+          if (!b || !b.name) return -1;
+          return a.name.localeCompare(b.name);
+        });
+      case "z-a":
+        return filtered.sort((a, b) => {
+          if (!a || !a.name) return 1;
+          if (!b || !b.name) return -1;
+          return b.name.localeCompare(a.name);
+        });
+      default:
+        return filtered;
+    }
+  }, [prototypes, searchTerm, sortOrder]);
 
   const handleAddPrototype = () => {
     setShowUploadModal(true);
@@ -227,11 +217,11 @@ const Dashboard = () => {
                 Try Again
               </UIButton>
             </div>
-          ) : sortedAndFilteredPrototypes().length > 0 ? (
+          ) : sortedAndFilteredPrototypes.length > 0 ? (
             <PrototypeGrid 
               activeTab={activeTab} 
               searchQuery={searchTerm}
-              prototypes={sortedAndFilteredPrototypes()} 
+              prototypes={sortedAndFilteredPrototypes} 
             />
           ) : (
             <EmptyState 

@@ -16,50 +16,49 @@ export function PrototypeGrid({ activeTab, searchQuery = "", prototypes = [] }: 
     // Enhanced logging for debugging
     console.log("PrototypeGrid received prototypes:", prototypes);
     
-    // Validate prototypes array
-    if (!prototypes) {
+    // Handle null/undefined prototypes array
+    if (!prototypes || !Array.isArray(prototypes)) {
       console.error("PrototypeGrid received null or undefined prototypes");
       setDisplayPrototypes([]);
       return;
     }
     
-    // Ensure prototypes is an array and all items are valid
-    if (Array.isArray(prototypes)) {
-      // Filter out any invalid prototypes (undefined, null, or missing required fields)
-      const validPrototypes = prototypes.filter(
-        (p): p is Prototype => 
-          !!p && 
-          typeof p === 'object' && 
-          typeof p.id === 'string' && 
-          typeof p.name === 'string'
-      );
-      
-      // Add logging for invalid prototypes
-      if (validPrototypes.length < prototypes.length) {
-        console.warn(
-          `PrototypeGrid filtered out ${prototypes.length - validPrototypes.length} invalid prototypes`,
-          prototypes.filter(p => !p || typeof p !== 'object' || typeof p.id !== 'string' || typeof p.name !== 'string')
-        );
+    // Deep validation of each prototype
+    const validPrototypes = prototypes.filter((p): p is Prototype => {
+      if (!p) {
+        console.warn("Filtered out null/undefined prototype");
+        return false;
       }
       
-      console.log("PrototypeGrid filtered prototypes:", validPrototypes);
-      setDisplayPrototypes(validPrototypes);
-    } else {
-      console.error("PrototypeGrid received non-array prototypes:", prototypes);
-      setDisplayPrototypes([]);
+      if (typeof p !== 'object') {
+        console.warn("Filtered out non-object prototype:", p);
+        return false;
+      }
+      
+      // Check for required fields
+      const isValid = 'id' in p && typeof p.id === 'string' && 
+                     'name' in p && typeof p.name === 'string';
+      
+      if (!isValid) {
+        console.warn("Filtered out invalid prototype missing required fields:", p);
+      }
+      
+      return isValid;
+    });
+    
+    // Add logging for debugging
+    if (validPrototypes.length < prototypes.length) {
+      console.warn(`Filtered out ${prototypes.length - validPrototypes.length} invalid prototypes`);
     }
+    
+    setDisplayPrototypes(validPrototypes);
   }, [activeTab, searchQuery, prototypes]);
-
-  // Log for debugging
-  console.log("PrototypeGrid displayPrototypes:", displayPrototypes);
 
   return (
     <div className="container py-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {displayPrototypes.map((prototype) => (
-          prototype && prototype.id ? (
-            <PrototypeCard key={prototype.id} prototype={prototype} />
-          ) : null
+          <PrototypeCard key={prototype.id} prototype={prototype} />
         ))}
       </div>
       {displayPrototypes.length === 0 && (
