@@ -25,9 +25,18 @@ import { Prototype } from "@/types/prototype";
 interface PrototypeCardProps {
   prototype: Prototype;
   className?: string;
+  isSelectable?: boolean;
+  isSelected?: boolean;
+  onSelect?: (id: string) => void;
 }
 
-export function PrototypeCard({ prototype, className = "" }: PrototypeCardProps) {
+export function PrototypeCard({ 
+  prototype, 
+  className = "", 
+  isSelectable = false,
+  isSelected = false,
+  onSelect
+}: PrototypeCardProps) {
   const [previewLoaded, setPreviewLoaded] = useState(false);
   const [previewError, setPreviewError] = useState(false);
   
@@ -156,31 +165,49 @@ export function PrototypeCard({ prototype, className = "" }: PrototypeCardProps)
   }
 
   return (
-    <Link to={`/prototypes/${safePrototype.id}`}>
-      <div className="h-full rounded-lg overflow-hidden border border-border bg-background shadow-sm hover:shadow-md transition-shadow">
-        <div className={`w-full relative overflow-hidden ${getCardHeight()}`}>
-          {getPreviewImage()}
-        </div>
-        
-        <div className="p-3 flex items-center justify-between">
-          <span className="font-medium text-sm truncate">{safePrototype.name}</span>
-          <div className="flex items-center gap-2">
-            <button className="p-1 text-muted-foreground hover:text-foreground rounded-full">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="18" cy="5" r="3" />
-                <circle cx="6" cy="12" r="3" />
-                <circle cx="18" cy="19" r="3" />
-                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+    <div 
+      className="h-full rounded-lg overflow-hidden border border-border bg-background shadow-sm hover:shadow-md transition-shadow relative"
+      onClick={(e) => {
+        if (isSelectable && onSelect) {
+          e.preventDefault();
+          onSelect(safePrototype.id);
+        }
+      }}
+    >
+      {isSelectable && (
+        <div className="absolute top-2 left-2 z-10">
+          <div className={`h-5 w-5 rounded border ${isSelected ? 'bg-primary border-primary' : 'bg-background border-muted-foreground/30'} flex items-center justify-center`}>
+            {isSelected && (
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
               </svg>
-            </button>
-            <div className="flex items-center gap-1 text-muted-foreground">
-              <MessageSquareText size={16} />
-              <span className="text-xs">{safePrototype.comments_count}</span>
-            </div>
+            )}
+          </div>
+        </div>
+      )}
+      
+      <div className={`w-full relative overflow-hidden ${getCardHeight()}`}>
+        {getPreviewImage()}
+      </div>
+      
+      <div className="p-3 flex items-center justify-between">
+        <span className="font-medium text-sm truncate">{safePrototype.name}</span>
+        <div className="flex items-center gap-2">
+          <button className="p-1 text-muted-foreground hover:text-foreground rounded-full">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="18" cy="5" r="3" />
+              <circle cx="6" cy="12" r="3" />
+              <circle cx="18" cy="19" r="3" />
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+              <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+            </svg>
+          </button>
+          <div className="flex items-center gap-1 text-muted-foreground">
+            <MessageSquareText size={16} />
+            <span className="text-xs">{safePrototype.comments_count}</span>
           </div>
         </div>
       </div>
-    </Link>
+    </div>
   );
 }

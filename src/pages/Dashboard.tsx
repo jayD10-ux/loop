@@ -25,10 +25,17 @@ const Dashboard = () => {
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest" | "a-z" | "z-a">("newest");
   const [activeTeam, setActiveTeam] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedPrototypes, setSelectedPrototypes] = useState<string[]>([]);
 
   useEffect(() => {
     fetchPrototypes();
   }, [activeTab, activeTeam]);
+
+  // Reset selection when changing tabs
+  useEffect(() => {
+    setSelectedPrototypes([]);
+  }, [activeTab]);
 
   const fetchPrototypes = async () => {
     try {
@@ -163,6 +170,54 @@ const Dashboard = () => {
     navigate(`/prototypes/${prototype.id}`);
   };
 
+  const handleToggleSelectionMode = () => {
+    setIsSelectionMode(!isSelectionMode);
+    setSelectedPrototypes([]); // Clear selections when toggling mode
+  };
+
+  const handleDeletePrototypes = async (prototypeIds: string[]) => {
+    if (!prototypeIds.length) return;
+    
+    try {
+      setLoading(true);
+      
+      // Delete each prototype from the database
+      for (const id of prototypeIds) {
+        const { error } = await supabase
+          .from("prototypes")
+          .delete()
+          .eq("id", id);
+          
+        if (error) {
+          console.error(`Error deleting prototype ${id}:`, error);
+          throw error;
+        }
+      }
+      
+      // Refresh the prototype list
+      toast({
+        title: prototypeIds.length === 1 
+          ? "Prototype deleted" 
+          : `${prototypeIds.length} prototypes deleted`,
+        description: "The selected items have been removed",
+      });
+      
+      // Clear selection and refresh
+      setSelectedPrototypes([]);
+      fetchPrototypes();
+      
+    } catch (error) {
+      console.error("Error deleting prototypes:", error);
+      toast({
+        title: "Error deleting prototypes",
+        description: "There was a problem deleting the selected prototypes.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
@@ -183,6 +238,9 @@ const Dashboard = () => {
             <TabNavigation 
               activeTab={activeTab} 
               onTabChange={(tab) => setActiveTab(tab)} 
+              isSelectionMode={isSelectionMode}
+              onToggleSelectionMode={handleToggleSelectionMode}
+              selectedCount={selectedPrototypes.length}
             />
             <DashboardControls
               searchTerm={searchTerm}
@@ -222,6 +280,8 @@ const Dashboard = () => {
               activeTab={activeTab} 
               searchQuery={searchTerm}
               prototypes={sortedAndFilteredPrototypes} 
+              isSelectionMode={isSelectionMode}
+              onDeletePrototypes={handleDeletePrototypes}
             />
           ) : (
             <EmptyState 

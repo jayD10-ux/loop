@@ -1,15 +1,35 @@
 import { PrototypeCard } from "./PrototypeCard";
 import { useState, useEffect } from "react";
 import { Prototype } from "@/types/prototype";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Trash } from "lucide-react";
 
 interface PrototypeGridProps {
   activeTab: string;
   searchQuery?: string;
-  prototypes: Prototype[]; 
+  prototypes: Prototype[];
+  isSelectionMode?: boolean;
+  onDeletePrototypes?: (ids: string[]) => void;
 }
 
-export function PrototypeGrid({ activeTab, searchQuery = "", prototypes = [] }: PrototypeGridProps) {
+export function PrototypeGrid({ 
+  activeTab, 
+  searchQuery = "", 
+  prototypes = [],
+  isSelectionMode = false,
+  onDeletePrototypes
+}: PrototypeGridProps) {
   const [displayPrototypes, setDisplayPrototypes] = useState<Prototype[]>([]);
+  const [selectedPrototypes, setSelectedPrototypes] = useState<string[]>([]);
+
+  // Reset selection when selection mode is toggled
+  useEffect(() => {
+    if (!isSelectionMode) {
+      setSelectedPrototypes([]);
+    }
+  }, [isSelectionMode]);
 
   useEffect(() => {
     // Enhanced logging for debugging
@@ -68,19 +88,100 @@ export function PrototypeGrid({ activeTab, searchQuery = "", prototypes = [] }: 
     return columns;
   };
 
+  const handleSelect = (id: string) => {
+    setSelectedPrototypes(prev => {
+      if (prev.includes(id)) {
+        return prev.filter(prototypeId => prototypeId !== id);
+      } else {
+        return [...prev, id];
+      }
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedPrototypes.length === displayPrototypes.length) {
+      setSelectedPrototypes([]);
+    } else {
+      setSelectedPrototypes(displayPrototypes.map(p => p.id));
+    }
+  };
+
+  const handleDelete = () => {
+    if (onDeletePrototypes && selectedPrototypes.length > 0) {
+      onDeletePrototypes(selectedPrototypes);
+      setSelectedPrototypes([]);
+    }
+  };
+
   const columns = getGridColumns();
 
   return (
     <div className="w-full py-6">
+      {isSelectionMode && (
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={handleSelectAll}
+            >
+              {selectedPrototypes.length === displayPrototypes.length 
+                ? "Deselect All" 
+                : "Select All"}
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              {selectedPrototypes.length} selected
+            </span>
+          </div>
+
+          {selectedPrototypes.length > 0 && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm">
+                  <Trash size={16} className="mr-2" />
+                  Delete {selectedPrototypes.length > 1 ? "Selected" : ""}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete 
+                    {selectedPrototypes.length === 1 
+                      ? " the selected prototype." 
+                      : ` ${selectedPrototypes.length} selected prototypes.`}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </div>
+      )}
+
       {columns ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {columns.map((column, columnIndex) => (
             <div key={columnIndex} className="flex flex-col gap-6">
               {column.map((prototype) => (
-                <PrototypeCard 
-                  key={prototype.id} 
-                  prototype={prototype} 
-                />
+                isSelectionMode ? (
+                  <PrototypeCard 
+                    key={prototype.id} 
+                    prototype={prototype}
+                    isSelectable={true}
+                    isSelected={selectedPrototypes.includes(prototype.id)}
+                    onSelect={handleSelect}
+                  />
+                ) : (
+                  <Link key={prototype.id} to={`/prototypes/${prototype.id}`}>
+                    <PrototypeCard 
+                      prototype={prototype} 
+                    />
+                  </Link>
+                )
               ))}
             </div>
           ))}
