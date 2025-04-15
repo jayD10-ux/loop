@@ -3,25 +3,23 @@ import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface TabNavigationProps {
-  onTabChange: (tab: string) => void;
+  activeTab: "all" | "yours" | "team";
+  onTabChange: (tab: "all" | "yours" | "team") => void;
 }
 
-export function TabNavigation({ onTabChange }: TabNavigationProps) {
-  const [activeTab, setActiveTab] = useState("all");
-
+export function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
   const handleTabChange = (value: string) => {
-    setActiveTab(value);
-    onTabChange(value);
+    onTabChange(value as "all" | "yours" | "team");
   };
 
   return (
     <div className="py-4 border-b">
       <div className="container">
-        <Tabs defaultValue="all" value={activeTab} onValueChange={handleTabChange}>
+        <Tabs defaultValue={activeTab} value={activeTab} onValueChange={handleTabChange}>
           <TabsList>
             <TabsTrigger value="all">All Prototypes</TabsTrigger>
-            <TabsTrigger value="shared">Shared with me</TabsTrigger>
-            <TabsTrigger value="collections">Collections</TabsTrigger>
+            <TabsTrigger value="yours">Your Prototypes</TabsTrigger>
+            <TabsTrigger value="team">Team Prototypes</TabsTrigger>
           </TabsList>
         </Tabs>
       </div>

@@ -7,11 +7,15 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 interface EmptyStateProps {
   isTeam?: boolean;
   teamName?: string;
-  onAddPrototype: () => void;
+  onAddClick: () => void;
+  onAddPrototype?: () => void;
 }
 
-export function EmptyState({ isTeam = false, teamName, onAddPrototype }: EmptyStateProps) {
+export function EmptyState({ isTeam = false, teamName, onAddClick, onAddPrototype }: EmptyStateProps) {
   const [activeTab, setActiveTab] = useState<'create' | 'upload'>('create');
+  
+  // Use onAddClick as the primary handler, fall back to onAddPrototype for backward compatibility
+  const handleAddClick = onAddClick || onAddPrototype || (() => {});
   
   return (
     <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
@@ -44,7 +48,7 @@ export function EmptyState({ isTeam = false, teamName, onAddPrototype }: EmptySt
         {activeTab === 'create' ? (
           <div className="space-y-6">
             <Button 
-              onClick={onAddPrototype}
+              onClick={handleAddClick}
               className="w-full flex items-center justify-center gap-2 text-base h-12"
             >
               <Plus className="h-5 w-5" />
@@ -52,11 +56,11 @@ export function EmptyState({ isTeam = false, teamName, onAddPrototype }: EmptySt
             </Button>
             
             <div className="grid grid-cols-2 gap-4">
-              <Button variant="outline" className="flex flex-col py-6 h-auto" onClick={onAddPrototype}>
+              <Button variant="outline" className="flex flex-col py-6 h-auto" onClick={handleAddClick}>
                 <Code className="h-6 w-6 mb-2" />
                 <span>Code Prototype</span>
               </Button>
-              <Button variant="outline" className="flex flex-col py-6 h-auto" onClick={onAddPrototype}>
+              <Button variant="outline" className="flex flex-col py-6 h-auto" onClick={handleAddClick}>
                 <GitBranch className="h-6 w-6 mb-2" />
                 <span>From Template</span>
               </Button>
@@ -65,7 +69,7 @@ export function EmptyState({ isTeam = false, teamName, onAddPrototype }: EmptySt
         ) : (
           <div className="space-y-6">
             <Button 
-              onClick={onAddPrototype}
+              onClick={handleAddClick}
               variant="outline"
               className="w-full flex items-center justify-center gap-2 text-base h-12"
             >
@@ -74,11 +78,11 @@ export function EmptyState({ isTeam = false, teamName, onAddPrototype }: EmptySt
             </Button>
             
             <div className="grid grid-cols-2 gap-4">
-              <Button variant="outline" className="flex flex-col py-6 h-auto" onClick={onAddPrototype}>
+              <Button variant="outline" className="flex flex-col py-6 h-auto" onClick={handleAddClick}>
                 <FileBox className="h-6 w-6 mb-2" />
                 <span>Upload HTML</span>
               </Button>
-              <Button variant="outline" className="flex flex-col py-6 h-auto" onClick={onAddPrototype}>
+              <Button variant="outline" className="flex flex-col py-6 h-auto" onClick={handleAddClick}>
                 <FileUp className="h-6 w-6 mb-2" />
                 <span>Upload ZIP</span>
               </Button>
