@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { 
   Card, 
@@ -37,6 +37,7 @@ export function PrototypeCard({
   isSelected = false,
   onSelect
 }: PrototypeCardProps) {
+  const navigate = useNavigate();
   const [previewLoaded, setPreviewLoaded] = useState(false);
   const [previewError, setPreviewError] = useState(false);
   
@@ -166,13 +167,15 @@ export function PrototypeCard({
   }
 
   return (
-    <Link 
-      to={`/prototype/${safePrototype.id}`}
+    <div 
       className="block h-full cursor-pointer"
       onClick={(e) => {
         if (isSelectable && onSelect) {
           e.preventDefault();
           onSelect(safePrototype.id);
+        } else {
+          // Navigate programmatically instead of using a Link wrapper
+          navigate(`/prototype/${safePrototype.id}`);
         }
       }}
     >
@@ -217,6 +220,6 @@ export function PrototypeCard({
           </div>
         </div>
       </div>
-    </Link>
+    </div>
   );
 }
