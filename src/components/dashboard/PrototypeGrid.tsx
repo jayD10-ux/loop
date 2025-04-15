@@ -1,5 +1,6 @@
 import { PrototypeCard } from "./PrototypeCard";
 import { useState, useEffect } from "react";
+import { Prototype } from "@/types/prototype";
 
 // Mock data - would come from API in real app
 const MOCK_PROTOTYPES = [
@@ -108,60 +109,25 @@ const MOCK_COLLECTIONS = [
 interface PrototypeGridProps {
   activeTab: string;
   searchQuery?: string;
-  customProjects?: any[]; // Add this prop to accept custom projects
+  prototypes: Prototype[]; // Changed to accept actual prototypes from parent
 }
 
-export function PrototypeGrid({ activeTab, searchQuery = "", customProjects }: PrototypeGridProps) {
-  const [prototypes, setPrototypes] = useState<any[]>([]);
+export function PrototypeGrid({ activeTab, searchQuery = "", prototypes }: PrototypeGridProps) {
+  const [displayPrototypes, setDisplayPrototypes] = useState<any[]>([]);
 
   useEffect(() => {
-    // If customProjects is provided, use those instead of mock data
-    if (customProjects) {
-      setPrototypes(customProjects);
-      return;
-    }
-    
-    let filteredPrototypes: any[] = [];
-    
-    switch (activeTab) {
-      case "all":
-        filteredPrototypes = [...MOCK_PROTOTYPES];
-        break;
-      case "shared":
-        filteredPrototypes = [...MOCK_SHARED_PROTOTYPES];
-        break;
-      case "collections":
-        // For collections tab, we'll just show prototypes from the first collection
-        // In a real app, we'd show a different UI for collections
-        filteredPrototypes = MOCK_COLLECTIONS[0].prototypes;
-        break;
-      default:
-        filteredPrototypes = [...MOCK_PROTOTYPES];
-    }
-
-    // Apply search filter if present
-    if (searchQuery) {
-      filteredPrototypes = filteredPrototypes.filter(
-        prototype => 
-          prototype.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          prototype.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (prototype.tags && prototype.tags.some(tag => 
-            tag.toLowerCase().includes(searchQuery.toLowerCase())
-          ))
-      );
-    }
-
-    setPrototypes(filteredPrototypes);
-  }, [activeTab, searchQuery, customProjects]);
+    // Use the prototypes prop as the source of data
+    setDisplayPrototypes(prototypes);
+  }, [activeTab, searchQuery, prototypes]);
 
   return (
     <div className="container py-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {prototypes.map((prototype) => (
+        {displayPrototypes.map((prototype) => (
           <PrototypeCard key={prototype.id} {...prototype} />
         ))}
       </div>
-      {prototypes.length === 0 && (
+      {displayPrototypes.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <h3 className="text-xl font-semibold mb-2">No prototypes found</h3>
           <p className="text-muted-foreground mb-4">

@@ -15,15 +15,20 @@ interface Team {
 }
 
 interface TeamSelectorProps {
-  teams: Team[];
   activeTeamId: string | null;
   onTeamChange: (teamId: string | null) => void;
+  teams?: Team[];
 }
 
-export function TeamSelector({ teams, activeTeamId, onTeamChange }: TeamSelectorProps) {
-  if (teams.length === 0) return null;
+export function TeamSelector({ teams = [], activeTeamId, onTeamChange }: TeamSelectorProps) {
+  // Mock teams if none provided
+  const displayTeams = teams.length ? teams : [
+    { id: "team1", name: "Design Team" },
+    { id: "team2", name: "Engineering" },
+    { id: "team3", name: "Marketing" }
+  ];
   
-  const activeTeam = teams.find(team => team.id === activeTeamId);
+  const activeTeam = displayTeams.find(team => team.id === activeTeamId);
   
   return (
     <DropdownMenu>
@@ -43,7 +48,7 @@ export function TeamSelector({ teams, activeTeamId, onTeamChange }: TeamSelector
             {activeTeamId === null && <Check className="h-4 w-4" />}
           </DropdownMenuItem>
           
-          {teams.map((team) => (
+          {displayTeams.map((team) => (
             <DropdownMenuItem
               key={team.id}
               className="flex items-center justify-between"
