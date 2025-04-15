@@ -176,7 +176,7 @@ export function PrototypeGrid({
                     onSelect={handleSelect}
                   />
                 ) : (
-                  <Link key={prototype.id} to={`/prototypes/${prototype.id}`}>
+                  <Link key={prototype.id} to={`/prototype/${prototype.id}`}>
                     <PrototypeCard 
                       prototype={prototype} 
                     />
