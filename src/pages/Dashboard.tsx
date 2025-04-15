@@ -224,7 +224,7 @@ const Dashboard = () => {
       
       <main className="flex-1 container py-6">
         <div className="flex flex-col gap-6">
-          <div className="flex justify-between items-center">
+          {/* <div className="flex justify-between items-center">
             <h1 className="text-2xl font-bold tracking-tight">My Prototypes</h1>
             <div className="flex items-center gap-2">
               <UIButton onClick={fetchPrototypes} variant="ghost" size="icon" title="Refresh">
@@ -233,7 +233,7 @@ const Dashboard = () => {
               <UIButton onClick={handleAddPrototype}>Add Prototype</UIButton>
             </div>
           </div>
-          
+           */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <TabNavigation 
               activeTab={activeTab} 
