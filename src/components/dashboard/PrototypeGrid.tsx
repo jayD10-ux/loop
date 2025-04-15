@@ -1,4 +1,3 @@
-
 import { PrototypeCard } from "./PrototypeCard";
 import { useState, useEffect } from "react";
 import { Prototype } from "@/types/prototype";
@@ -55,7 +54,7 @@ export function PrototypeGrid({ activeTab, searchQuery = "", prototypes = [] }: 
   }, [activeTab, searchQuery, prototypes]);
 
   return (
-    <div className="container py-6">
+    <div className="w-full py-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {displayPrototypes.map((prototype) => (
           <PrototypeCard key={prototype.id} prototype={prototype} />

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
@@ -49,38 +48,9 @@ export function PrototypeCard({ prototype, className = "" }: PrototypeCardProps)
     deployment_url: prototype.deployment_url || null,
     figma_link: prototype.figma_link || null,
     figma_preview_url: prototype.figma_preview_url || null,
+    comments_count: prototype.comments_count || 24, // Default to 24 for demo if not available
   };
   
-  const getDeploymentStatus = () => {
-    if (!safePrototype.deployment_status) return null;
-    
-    switch (safePrototype.deployment_status) {
-      case "pending":
-        return (
-          <div className="flex items-center text-sm text-amber-500">
-            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-            <span>Processing</span>
-          </div>
-        );
-      case "deployed":
-        return (
-          <div className="flex items-center text-sm text-green-500">
-            <div className="h-2 w-2 rounded-full bg-green-500 mr-1.5"></div>
-            <span>Live</span>
-          </div>
-        );
-      case "failed":
-        return (
-          <div className="flex items-center text-sm text-red-500">
-            <div className="h-2 w-2 rounded-full bg-red-500 mr-1.5"></div>
-            <span>Failed</span>
-          </div>
-        );
-      default:
-        return null;
-    }
-  };
-
   const getPreviewImage = () => {
     // Priority order for preview images:
     // 1. Figma preview URL
@@ -89,7 +59,7 @@ export function PrototypeCard({ prototype, className = "" }: PrototypeCardProps)
     
     if (previewError) {
       return (
-        <div className="flex flex-col items-center justify-center h-full bg-muted/30">
+        <div className="flex flex-col items-center justify-center h-full bg-muted/30 bg-[repeating-conic-gradient(#f0f0f0_0_90deg,#ffffff_0_180deg)_0_0/20px_20px]">
           <FileCode className="h-12 w-12 text-muted-foreground mb-2" />
           <span className="text-sm text-muted-foreground">Preview not available</span>
         </div>
@@ -101,7 +71,7 @@ export function PrototypeCard({ prototype, className = "" }: PrototypeCardProps)
       return (
         <>
           {!previewLoaded && (
-            <div className="absolute inset-0 flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center justify-center bg-[repeating-conic-gradient(#f0f0f0_0_90deg,#ffffff_0_180deg)_0_0/20px_20px]">
               <Loader2 className="h-8 w-8 animate-spin text-primary/70" />
             </div>
           )}
@@ -116,12 +86,12 @@ export function PrototypeCard({ prototype, className = "" }: PrototypeCardProps)
       );
     }
     
-    // For deployment URL - use iframe
+    // For deployment URL - use iframe with checkered background before loading
     if (safePrototype.deployment_url && !previewError) {
       return (
         <>
           {!previewLoaded && (
-            <div className="absolute inset-0 flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center justify-center bg-[repeating-conic-gradient(#f0f0f0_0_90deg,#ffffff_0_180deg)_0_0/20px_20px]">
               <Loader2 className="h-8 w-8 animate-spin text-primary/70" />
             </div>
           )}
@@ -137,9 +107,9 @@ export function PrototypeCard({ prototype, className = "" }: PrototypeCardProps)
       );
     }
     
-    // Fallback based on tech stack
+    // Fallback based on tech stack - with checkered background
     return (
-      <div className="flex flex-col items-center justify-center h-full bg-muted/30">
+      <div className="flex flex-col items-center justify-center h-full bg-[repeating-conic-gradient(#f0f0f0_0_90deg,#ffffff_0_180deg)_0_0/20px_20px]">
         {safePrototype.tech_stack === "react" ? (
           <Code className="h-12 w-12 text-sky-500 mb-2" />
         ) : safePrototype.tech_stack === "vanilla" ? (
@@ -170,34 +140,30 @@ export function PrototypeCard({ prototype, className = "" }: PrototypeCardProps)
 
   return (
     <Link to={`/prototypes/${safePrototype.id}`}>
-      <Card className={`h-full hover:shadow-md transition-shadow overflow-hidden ${className}`}>
-        <div className="w-full h-40 relative overflow-hidden bg-muted">
+      <div className="h-full rounded-lg overflow-hidden border border-border bg-background shadow-sm hover:shadow-md transition-shadow">
+        <div className="w-full aspect-square relative overflow-hidden">
           {getPreviewImage()}
-          
-          {safePrototype.figma_link && (
-            <div className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm rounded p-1.5">
-              <Figma className="h-4 w-4 text-blue-500" />
-            </div>
-          )}
         </div>
         
-        <CardHeader className="pb-2">
-          <div className="flex justify-between items-start">
-            <CardTitle className="line-clamp-1 text-base">{safePrototype.name}</CardTitle>
-            {getDeploymentStatus()}
+        <div className="p-3 flex items-center justify-between">
+          <span className="font-medium text-sm truncate">{safePrototype.name}</span>
+          <div className="flex items-center gap-2">
+            <button className="p-1 text-muted-foreground hover:text-foreground rounded-full">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="18" cy="5" r="3" />
+                <circle cx="6" cy="12" r="3" />
+                <circle cx="18" cy="19" r="3" />
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+              </svg>
+            </button>
+            <div className="flex items-center gap-1 text-muted-foreground">
+              <MessageSquareText size={16} />
+              <span className="text-xs">{safePrototype.comments_count}</span>
+            </div>
           </div>
-          {safePrototype.description && (
-            <CardDescription className="line-clamp-2 text-xs">
-              {safePrototype.description}
-            </CardDescription>
-          )}
-        </CardHeader>
-        
-        <CardFooter className="pt-0 text-xs text-muted-foreground flex items-center">
-          <Clock className="h-3 w-3 mr-1 flex-shrink-0" />
-          <span className="truncate">{formattedDate}</span>
-        </CardFooter>
-      </Card>
+        </div>
+      </div>
     </Link>
   );
 }

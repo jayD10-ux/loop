@@ -1,4 +1,3 @@
-
 export interface Prototype {
   id: string;
   name: string;
@@ -16,4 +15,5 @@ export interface Prototype {
   figma_file_key?: string | null;
   figma_file_name?: string | null;
   figma_preview_url?: string | null;
+  comments_count?: number;
 }
