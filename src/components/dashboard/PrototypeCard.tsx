@@ -32,6 +32,18 @@ export function PrototypeCard({ prototype, className = "" }: PrototypeCardProps)
   const [previewLoaded, setPreviewLoaded] = useState(false);
   const [previewError, setPreviewError] = useState(false);
   
+  // Safety check for prototype data
+  if (!prototype) {
+    console.error("PrototypeCard received undefined prototype data");
+    return (
+      <Card className={`h-full ${className}`}>
+        <CardHeader>
+          <CardTitle>Error: Invalid prototype data</CardTitle>
+        </CardHeader>
+      </Card>
+    );
+  }
+  
   const getDeploymentStatus = () => {
     if (!prototype.deployment_status) return null;
     
@@ -139,6 +151,7 @@ export function PrototypeCard({ prototype, className = "" }: PrototypeCardProps)
     );
   };
 
+  // Safely format the date with fallback
   const formattedDate = prototype.created_at 
     ? formatDistanceToNow(new Date(prototype.created_at), { addSuffix: true })
     : "Recently";
@@ -158,7 +171,7 @@ export function PrototypeCard({ prototype, className = "" }: PrototypeCardProps)
         
         <CardHeader className="pb-2">
           <div className="flex justify-between items-start">
-            <CardTitle className="line-clamp-1 text-base">{prototype.name}</CardTitle>
+            <CardTitle className="line-clamp-1 text-base">{prototype.name || "Untitled Prototype"}</CardTitle>
             {getDeploymentStatus()}
           </div>
           {prototype.description && (

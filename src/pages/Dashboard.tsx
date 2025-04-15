@@ -13,6 +13,7 @@ import { DualUploadModal } from "@/components/prototype/DualUploadModal";
 import { Prototype } from "@/types/prototype";
 import { Button as UIButton } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -24,6 +25,7 @@ const Dashboard = () => {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest" | "a-z" | "z-a">("newest");
   const [activeTeam, setActiveTeam] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchPrototypes();
@@ -32,6 +34,7 @@ const Dashboard = () => {
   const fetchPrototypes = async () => {
     try {
       setLoading(true);
+      setError(null);
       
       const { data: { session } } = await supabase.auth.getSession();
       
@@ -51,25 +54,50 @@ const Dashboard = () => {
         query = query.eq("created_by", userId);
       }
       
-      const { data, error } = await query;
+      const { data, error: fetchError } = await query;
       
-      if (error) {
-        console.error("Error fetching prototypes:", error);
+      if (fetchError) {
+        console.error("Error fetching prototypes:", fetchError);
+        setError("Failed to load prototypes. Please try again later.");
+        toast({
+          title: "Error loading prototypes",
+          description: "There was a problem loading your prototypes.",
+          variant: "destructive",
+        });
         return;
       }
       
+      console.log("Fetched prototypes:", data);
+      
       if (data) {
-        const prototypesData = data as Prototype[];
-        setPrototypes(prototypesData);
+        // Ensure all required fields are present
+        const validPrototypes = (data as Prototype[]).map(p => ({
+          ...p,
+          // Ensure required fields have default values
+          created_at: p.created_at || new Date().toISOString(),
+          updated_at: p.updated_at || new Date().toISOString(),
+          description: p.description || null,
+          files: p.files || {}
+        }));
+        
+        setPrototypes(validPrototypes);
+      } else {
+        setPrototypes([]);
       }
     } catch (error) {
       console.error("Error in fetchPrototypes:", error);
+      setError("An unexpected error occurred. Please try again later.");
     } finally {
       setLoading(false);
     }
   };
 
   const sortedAndFilteredPrototypes = () => {
+    if (!Array.isArray(prototypes)) {
+      console.error("prototypes is not an array:", prototypes);
+      return [];
+    }
+    
     let filtered = [...prototypes];
     
     // Filter by search term
@@ -77,7 +105,7 @@ const Dashboard = () => {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(
         p => 
-          p.name.toLowerCase().includes(term) || 
+          (p.name && p.name.toLowerCase().includes(term)) || 
           (p.description && p.description.toLowerCase().includes(term))
       );
     }
@@ -86,16 +114,16 @@ const Dashboard = () => {
     switch (sortOrder) {
       case "newest":
         return filtered.sort((a, b) => 
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
         );
       case "oldest":
         return filtered.sort((a, b) => 
-          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime()
         );
       case "a-z":
-        return filtered.sort((a, b) => a.name.localeCompare(b.name));
+        return filtered.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
       case "z-a":
-        return filtered.sort((a, b) => b.name.localeCompare(a.name));
+        return filtered.sort((a, b) => (b.name || "").localeCompare(a.name || ""));
       default:
         return filtered;
     }
@@ -129,7 +157,7 @@ const Dashboard = () => {
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <TabNavigation 
               activeTab={activeTab} 
-              onTabChange={(tab: "all" | "yours" | "team") => setActiveTab(tab)} 
+              onTabChange={(tab) => setActiveTab(tab)} 
             />
             <DashboardControls
               searchTerm={searchTerm}
@@ -142,7 +170,8 @@ const Dashboard = () => {
           {activeTab === "team" && (
             <TeamSelector 
               activeTeamId={activeTeam} 
-              onTeamChange={(teamId: string | null) => setActiveTeam(teamId)} 
+              onTeamChange={(teamId) => setActiveTeam(teamId)}
+              teams={[]} 
             />
           )}
           
@@ -155,6 +184,14 @@ const Dashboard = () => {
                 ></div>
               ))}
             </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <h3 className="text-xl font-semibold mb-2 text-destructive">Error</h3>
+              <p className="text-muted-foreground mb-4">{error}</p>
+              <UIButton onClick={fetchPrototypes} variant="outline">
+                Try Again
+              </UIButton>
+            </div>
           ) : sortedAndFilteredPrototypes().length > 0 ? (
             <PrototypeGrid 
               activeTab={activeTab} 
@@ -163,7 +200,8 @@ const Dashboard = () => {
             />
           ) : (
             <EmptyState 
-              onAddClick={handleAddPrototype} 
+              onAddClick={handleAddPrototype}
+              onAddPrototype={handleAddPrototype} 
             />
           )}
         </div>
