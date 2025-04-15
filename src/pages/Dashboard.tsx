@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -93,9 +92,28 @@ const Dashboard = () => {
   };
 
   const sortedAndFilteredPrototypes = () => {
+    console.log("Dashboard.sortedAndFilteredPrototypes - raw prototypes:", prototypes);
+    
+    if (!prototypes) {
+      console.error("sortedAndFilteredPrototypes received undefined prototypes");
+      return [];
+    }
+    
     if (!Array.isArray(prototypes)) {
       console.error("prototypes is not an array:", prototypes);
       return [];
+    }
+    
+    // Check for invalid prototype entries
+    const invalidEntries = prototypes.filter(p => !p || typeof p !== 'object' || !p.name);
+    if (invalidEntries.length > 0) {
+      console.warn("sortedAndFilteredPrototypes found invalid entries:", invalidEntries);
+    }
+    
+    // Check for missing created_at fields
+    const missingCreatedAt = prototypes.filter(p => p && typeof p === 'object' && !p.created_at);
+    if (missingCreatedAt.length > 0) {
+      console.warn("sortedAndFilteredPrototypes found entries missing created_at:", missingCreatedAt);
     }
     
     let filtered = [...prototypes];
@@ -105,28 +123,45 @@ const Dashboard = () => {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(
         p => 
-          (p.name && p.name.toLowerCase().includes(term)) || 
-          (p.description && p.description.toLowerCase().includes(term))
+          (p && p.name && p.name.toLowerCase().includes(term)) || 
+          (p && p.description && p.description.toLowerCase().includes(term))
       );
     }
     
-    // Sort
-    switch (sortOrder) {
-      case "newest":
-        return filtered.sort((a, b) => 
-          new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
-        );
-      case "oldest":
-        return filtered.sort((a, b) => 
-          new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime()
-        );
-      case "a-z":
-        return filtered.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-      case "z-a":
-        return filtered.sort((a, b) => (b.name || "").localeCompare(a.name || ""));
-      default:
-        return filtered;
-    }
+    // Sort with additional null checks
+    const result = (() => {
+      switch (sortOrder) {
+        case "newest":
+          return filtered.sort((a, b) => {
+            if (!a || !a.created_at) return 1;
+            if (!b || !b.created_at) return -1;
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+          });
+        case "oldest":
+          return filtered.sort((a, b) => {
+            if (!a || !a.created_at) return 1;
+            if (!b || !b.created_at) return -1;
+            return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          });
+        case "a-z":
+          return filtered.sort((a, b) => {
+            if (!a || !a.name) return 1;
+            if (!b || !b.name) return -1;
+            return a.name.localeCompare(b.name);
+          });
+        case "z-a":
+          return filtered.sort((a, b) => {
+            if (!a || !a.name) return 1;
+            if (!b || !b.name) return -1;
+            return b.name.localeCompare(a.name);
+          });
+        default:
+          return filtered;
+      }
+    })();
+    
+    console.log("Dashboard.sortedAndFilteredPrototypes - result:", result);
+    return result;
   };
 
   const handleAddPrototype = () => {

@@ -13,6 +13,16 @@ export function PrototypeGrid({ activeTab, searchQuery = "", prototypes = [] }: 
   const [displayPrototypes, setDisplayPrototypes] = useState<Prototype[]>([]);
 
   useEffect(() => {
+    // Enhanced logging for debugging
+    console.log("PrototypeGrid received prototypes:", prototypes);
+    
+    // Validate prototypes array
+    if (!prototypes) {
+      console.error("PrototypeGrid received null or undefined prototypes");
+      setDisplayPrototypes([]);
+      return;
+    }
+    
     // Ensure prototypes is an array and all items are valid
     if (Array.isArray(prototypes)) {
       // Filter out any invalid prototypes (undefined, null, or missing required fields)
@@ -24,6 +34,15 @@ export function PrototypeGrid({ activeTab, searchQuery = "", prototypes = [] }: 
           typeof p.name === 'string'
       );
       
+      // Add logging for invalid prototypes
+      if (validPrototypes.length < prototypes.length) {
+        console.warn(
+          `PrototypeGrid filtered out ${prototypes.length - validPrototypes.length} invalid prototypes`,
+          prototypes.filter(p => !p || typeof p !== 'object' || typeof p.id !== 'string' || typeof p.name !== 'string')
+        );
+      }
+      
+      console.log("PrototypeGrid filtered prototypes:", validPrototypes);
       setDisplayPrototypes(validPrototypes);
     } else {
       console.error("PrototypeGrid received non-array prototypes:", prototypes);

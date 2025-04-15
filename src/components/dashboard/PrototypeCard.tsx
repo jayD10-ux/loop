@@ -32,9 +32,12 @@ export function PrototypeCard({ prototype, className = "" }: PrototypeCardProps)
   const [previewLoaded, setPreviewLoaded] = useState(false);
   const [previewError, setPreviewError] = useState(false);
   
-  // Safety check for prototype data
+  // Enhanced validation and logging
+  console.log("PrototypeCard received prototype:", prototype);
+  
+  // Early return with detailed validation
   if (!prototype) {
-    console.error("PrototypeCard received undefined prototype data");
+    console.error("PrototypeCard received undefined prototype");
     return (
       <Card className={`h-full ${className}`}>
         <CardHeader>
@@ -42,6 +45,26 @@ export function PrototypeCard({ prototype, className = "" }: PrototypeCardProps)
         </CardHeader>
       </Card>
     );
+  }
+  
+  // Check for required fields with detailed logging
+  if (!prototype.id || !prototype.name) {
+    console.error("PrototypeCard received prototype with missing required fields:", prototype);
+    return (
+      <Card className={`h-full ${className}`}>
+        <CardHeader>
+          <CardTitle>Error: Incomplete prototype data</CardTitle>
+          <CardDescription>
+            {prototype.id ? "" : "Missing ID. "}
+            {prototype.name ? "" : "Missing name. "}
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    );
+  }
+  
+  if (!prototype.created_at) {
+    console.warn("PrototypeCard: prototype missing created_at field:", prototype);
   }
   
   const getDeploymentStatus = () => {
@@ -151,7 +174,7 @@ export function PrototypeCard({ prototype, className = "" }: PrototypeCardProps)
     );
   };
 
-  // Safely format the date with fallback
+  // Safely format the date with fallback and validation
   const formattedDate = prototype.created_at 
     ? formatDistanceToNow(new Date(prototype.created_at), { addSuffix: true })
     : "Recently";
